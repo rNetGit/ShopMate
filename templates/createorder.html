@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Create Order - Store Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "foreground-light": "#101922",
+                        "foreground-dark": "#ffffff",
+                        "muted-light": "#6b7280",
+                        "muted-dark": "#9ca3af",
+                        "input-light": "#ffffff",
+                        "input-dark": "#374151",
+                        "border-light": "#d1d5db",
+                        "border-dark": "#4b5563",
+                    },
+                    fontFamily: {
+                        display: ["Manrope"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-foreground-light dark:text-foreground-dark">
+    <div class="flex h-screen flex-col">
+        <!-- Header -->
+        <header class="flex-shrink-0 border-b border-primary/20 dark:border-primary/30 bg-background-light dark:bg-background-dark">
+            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <button onclick="goBack()" class="rounded-full p-2 text-foreground-light dark:text-foreground-dark hover:bg-primary/10 dark:hover:bg-primary/20">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 class="text-lg font-bold">Create Order</h1>
+                <button class="rounded-full p-2 text-foreground-light dark:text-foreground-dark hover:bg-primary/10 dark:hover:bg-primary/20">
+                    <span class="material-symbols-outlined">more_vert</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 space-y-6">
+            <!-- Customer Selection -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold">Customer Information</h2>
+                <div>
+                    <label class="block text-sm font-medium text-muted-light dark:text-muted-dark mb-2" for="customer">Select Customer</label>
+                    <div class="relative">
+                        <select class="form-select w-full rounded-lg border-0 bg-input-light dark:bg-input-dark text-foreground-light dark:text-foreground-dark focus:ring-2 focus:ring-inset focus:ring-primary h-14 pl-4 pr-12 text-base" id="customer">
+                            <option value="">Choose a customer</option>
+                            <option value="john-doe">John Doe - 123 Main St</option>
+                            <option value="jane-smith">Jane Smith - 456 Oak Ave</option>
+                            <option value="bob-johnson">Bob Johnson - 789 Pine Ln</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                            <span class="material-symbols-outlined text-muted-light dark:text-muted-dark">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="flex items-center gap-2 text-primary hover:text-primary/80" onclick="showAddCustomerModal()">
+                    <span class="material-symbols-outlined">add</span>
+                    <span>Add New Customer</span>
+                </button>
+            </div>
+
+            <!-- Order Items -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-bold">Order Items</h2>
+                    <button class="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-primary hover:bg-primary/20" onclick="addItem()">
+                        <span class="material-symbols-outlined">add_circle</span>
+                        <span class="font-bold">Add Item</span>
+                    </button>
+                </div>
+
+                <div id="items-list" class="space-y-3">
+                    <!-- Dynamic items will be added here -->
+                </div>
+
+                <div id="empty-state" class="text-center py-8 text-muted-light dark:text-muted-dark">
+                    <span class="material-symbols-outlined text-6xl mb-4 block">shopping_cart</span>
+                    <p>No items added yet</p>
+                    <p class="text-sm">Click "Add Item" to start building the order</p>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div id="order-summary" class="space-y-4 bg-white dark:bg-background-dark/50 p-4 rounded-lg shadow-sm hidden">
+                <h2 class="text-lg font-bold">Order Summary</h2>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">$0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Tax (8.5%):</span>
+                        <span id="tax">$0.00</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-lg border-t pt-2">
+                        <span>Total:</span>
+                        <span id="total">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Details -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold">Additional Details</h2>
+                <div>
+                    <label class="block text-sm font-medium text-muted-light dark:text-muted-dark mb-2" for="delivery-date">Delivery Due Date</label>
+                    <div class="relative">
+                        <input class="form-input w-full rounded-lg border-0 bg-input-light dark:bg-input-dark text-foreground-light dark:text-foreground-dark placeholder:text-muted-light dark:placeholder:text-muted-dark focus:ring-2 focus:ring-inset focus:ring-primary h-14 pl-4 pr-12 text-base"
+                               id="delivery-date"
+                               placeholder="Select Date"
+                               type="date" />
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+                            <span class="material-symbols-outlined text-muted-light dark:text-muted-dark">calendar_today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-muted-light dark:text-muted-dark mb-2" for="notes">Order Notes</label>
+                    <textarea class="form-textarea w-full rounded-lg border-0 bg-input-light dark:bg-input-dark text-foreground-light dark:text-foreground-dark placeholder:text-muted-light dark:placeholder:text-muted-dark focus:ring-2 focus:ring-inset focus:ring-primary p-4 text-base"
+                              id="notes"
+                              rows="3"
+                              placeholder="Add any special instructions or notes..."></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-muted-light dark:text-muted-dark mb-2" for="order-slip">Upload Order Slip</label>
+                    <div class="flex items-center justify-center w-full">
+                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-border-light dark:border-border-dark border-dashed rounded-lg cursor-pointer bg-input-light/50 dark:bg-input-dark/50 hover:bg-input-light dark:hover:bg-input-dark" for="dropzone-file">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <span class="material-symbols-outlined text-muted-light dark:text-muted-dark text-4xl">cloud_upload</span>
+                                <p class="mb-2 text-sm text-muted-light dark:text-muted-dark"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-muted-light dark:text-muted-dark">PNG, JPG or PDF (MAX. 800x400px)</p>
+                            </div>
+                            <input class="hidden" id="dropzone-file" type="file" accept="image/*,.pdf" onchange="handleFileUpload(this)" />
+                        </label>
+                    </div>
+                    <div id="uploaded-files" class="mt-2 space-y-2"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="sticky bottom-0 bg-background-light dark:bg-background-dark p-4 border-t border-border-light dark:border-border-dark">
+            <button id="create-order-btn" class="w-full rounded-lg bg-primary h-12 px-5 text-base font-bold text-white shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onclick="createOrder()" disabled>
+                Create Order
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        let orderItems = [];
+        let itemCounter = 0;
+
+        // Item master data with sizes and prices
+        const itemMaster = {
+            'RINGS': [
+                { size: 'ANGLER RINGS', price: 200 },
+                { size: 'SMALL RINGS', price: 250 },
+                { size: 'FLAT RINGS', price: 50 },
+                { size: 'ULTA', price: 100 },
+                { size: '15MM', price: 250 }
+            ],
+            'NAGALS': [
+                { size: '20MM NAGALS', price: 300 },
+                { size: '25MM NAGALS', price: 200 },
+                { size: '32MM NAGALS', price: 232 }
+            ]
+        };
+
+        function goBack() {
+            window.history.back();
+        }
+
+        function addItem() {
+            itemCounter++;
+            const itemHtml = `
+                    <div class="flex items-center gap-4 rounded-lg bg-white dark:bg-background-dark/50 p-4 shadow-sm" data-item-id="${itemCounter}">
+                        <div class="flex-1 space-y-3">
+                            <!-- Item Name (Full width) -->
+                            <div class="grid grid-cols-1 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-muted-light dark:text-muted-dark mb-1">Item Name</label>
+                                    <select class="item-select form-select w-full rounded-md border-0 bg-input-light dark:bg-input-dark text-sm focus:ring-2 focus:ring-primary" onchange="onItemNameChange(${itemCounter})">
+                                        <option value="">Select item name</option>
+                                        <option value="RINGS">RINGS</option>
+                                        <option value="NAGALS">NAGALS</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Item Size and Unit Price (Same row) -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-muted-light dark:text-muted-dark mb-1">Item Size</label>
+                                    <select class="size-select form-select w-full rounded-md border-0 bg-input-light dark:bg-input-dark text-sm focus:ring-2 focus:ring-primary" onchange="onItemSizeChange(${itemCounter})" disabled>
+                                        <option value="">Select size first</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-muted-light dark:text-muted-dark mb-1">Unit Price</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-light dark:text-muted-dark text-sm">$</span>
+                                        <input type="number" step="0.01" placeholder="0.00" readonly class="price-input form-input w-full rounded-md border-0 bg-gray-100 dark:bg-gray-700 text-sm font-medium pl-6 cursor-not-allowed">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quantity and Total (Same row) -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-muted-light dark:text-muted-dark mb-1">Quantity</label>
+                                    <input type="number" min="1" value="1" class="quantity-input form-input w-full rounded-md border-0 bg-input-light dark:bg-input-dark text-sm focus:ring-2 focus:ring-primary" onchange="updateItemTotal(${itemCounter})">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-muted-light dark:text-muted-dark mb-1">Total</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-light dark:text-muted-dark text-sm">$</span>
+                                        <input type="text" readonly class="total-input form-input w-full rounded-md border-0 bg-gray-100 dark:bg-gray-700 text-sm font-medium pl-6 cursor-not-allowed" value="0.00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="text-red-500 hover:text-red-700 p-1 rounded transition-colors" onclick="removeItem(${itemCounter})" title="Remove item">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>
+                `;
+
+            document.getElementById('items-list').insertAdjacentHTML('beforeend', itemHtml);
+            document.getElementById('empty-state').style.display = 'none';
+            updateCreateButton();
+        }
+
+        function onItemNameChange(itemId) {
+            const item = document.querySelector(`[data-item-id="${itemId}"]`);
+            const itemSelect = item.querySelector('.item-select');
+            const sizeSelect = item.querySelector('.size-select');
+            const priceInput = item.querySelector('.price-input');
+            const totalInput = item.querySelector('.total-input');
+
+            const selectedItem = itemSelect.value;
+
+            // Clear size dropdown and reset prices
+            sizeSelect.innerHTML = '<option value="">Select size</option>';
+            priceInput.value = '';
+            totalInput.value = '0.00';
+
+            if (selectedItem && itemMaster[selectedItem]) {
+                // Enable size dropdown and populate with sizes
+                sizeSelect.disabled = false;
+
+                itemMaster[selectedItem].forEach(variant => {
+                    const option = document.createElement('option');
+                    option.value = variant.size;
+                    option.dataset.price = variant.price;
+                    option.textContent = `${variant.size} - $${variant.price}`;
+                    sizeSelect.appendChild(option);
+                });
+            } else {
+                // Disable size dropdown if no item selected
+                sizeSelect.disabled = true;
+            }
+
+            updateOrderSummary();
+            updateCreateButton();
+        }
+
+        function onItemSizeChange(itemId) {
+            const item = document.querySelector(`[data-item-id="${itemId}"]`);
+            const sizeSelect = item.querySelector('.size-select');
+            const priceInput = item.querySelector('.price-input');
+
+            if (sizeSelect.value && sizeSelect.selectedOptions[0].dataset.price) {
+                const price = parseFloat(sizeSelect.selectedOptions[0].dataset.price);
+                priceInput.value = price.toFixed(2);
+                updateItemTotal(itemId);
+            }
+        }
+
+        function updateItemTotal(itemId) {
+            const item = document.querySelector(`[data-item-id="${itemId}"]`);
+            const quantityInput = item.querySelector('.quantity-input');
+            const priceInput = item.querySelector('.price-input');
+            const totalInput = item.querySelector('.total-input');
+
+            const quantity = parseInt(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const total = quantity * price;
+
+            totalInput.value = total.toFixed(2);
+
+            updateOrderSummary();
+            updateCreateButton();
+        }
+
+        function removeItem(itemId) {
+            const item = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (confirm('Are you sure you want to remove this item?')) {
+                item.remove();
+
+                // Show empty state if no items
+                if (document.getElementById('items-list').children.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                }
+
+                updateOrderSummary();
+                updateCreateButton();
+            }
+        }
+
+        function updateOrderSummary() {
+            const items = document.querySelectorAll('#items-list > div');
+            let subtotal = 0;
+
+            items.forEach(item => {
+                const totalInput = item.querySelector('.total-input');
+                const total = parseFloat(totalInput.value) || 0;
+                subtotal += total;
+            });
+
+            const tax = subtotal * 0.085;
+            const total = subtotal + tax;
+
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+
+            // Show/hide summary
+            const summaryDiv = document.getElementById('order-summary');
+            if (subtotal > 0) {
+                summaryDiv.classList.remove('hidden');
+            } else {
+                summaryDiv.classList.add('hidden');
+            }
+        }
+
+        function updateCreateButton() {
+            const customer = document.getElementById('customer').value;
+            const hasItems = document.getElementById('items-list').children.length > 0;
+            const hasValidItems = Array.from(document.querySelectorAll('#items-list > div')).some(item => {
+                const itemSelect = item.querySelector('.item-select');
+                const sizeSelect = item.querySelector('.size-select');
+                return itemSelect.value && sizeSelect.value;
+            });
+
+            const btn = document.getElementById('create-order-btn');
+            btn.disabled = !customer || !hasItems || !hasValidItems;
+        }
+
+        function createOrder() {
+            // Collect order data
+            const customer = document.getElementById('customer').selectedOptions[0].text;
+            const total = document.getElementById('total').textContent;
+            const deliveryDate = document.getElementById('delivery-date').value;
+            const notes = document.getElementById('notes').value;
+
+            // Collect item details
+            const orderItems = [];
+            document.querySelectorAll('#items-list > div').forEach(item => {
+                const itemName = item.querySelector('.item-select').value;
+                const itemSize = item.querySelector('.size-select').value;
+                const quantity = item.querySelector('.quantity-input').value;
+                const unitPrice = item.querySelector('.price-input').value;
+                const itemTotal = item.querySelector('.total-input').value;
+
+                if (itemName && itemSize) {
+                    orderItems.push({
+                        name: itemName,
+                        size: itemSize,
+                        quantity: parseInt(quantity),
+                        unitPrice: parseFloat(unitPrice),
+                        total: parseFloat(itemTotal)
+                    });
+                }
+            });
+
+            if (confirm(`Create order for ${customer} with ${orderItems.length} items totaling ${total}?`)) {
+                // Show success message with order details
+                let itemsList = orderItems.map(item =>
+                    `• ${item.quantity}x ${item.name} (${item.size}) - $${item.total.toFixed(2)}`
+                ).join('\n');
+
+                alert(`Order created successfully!\n\nCustomer: ${customer}\nItems:\n${itemsList}\n\nTotal: ${total}\nDelivery Date: ${deliveryDate || 'Not specified'}`);
+
+                // In a real app, you would send this data to your backend
+                console.log('Order Data:', {
+                    customer: customer,
+                    items: orderItems,
+                    subtotal: document.getElementById('subtotal').textContent,
+                    tax: document.getElementById('tax').textContent,
+                    total: total,
+                    deliveryDate: deliveryDate,
+                    notes: notes
+                });
+
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'flex items-center gap-2 text-sm bg-primary/10 text-primary p-2 rounded';
+                fileDiv.innerHTML = `
+                        <span class="material-symbols-outlined text-lg">description</span>
+                        <span class="flex-1">${file.name}</span>
+                        <button class="text-red-500 hover:text-red-700" onclick="this.parentElement.remove()">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    `;
+                document.getElementById('uploaded-files').appendChild(fileDiv);
+            }
+        }
+
+        function showAddCustomerModal() {
+            alert('Add Customer modal would open here');
+        }
+
+        // Event listeners
+        document.getElementById('customer').addEventListener('change', updateCreateButton);
+
+        // Initialize with demo data
+        window.addEventListener('load', function () {
+            console.log('Item Master Data:', itemMaster);
+        });
+    </script>
+</body>
+</html>

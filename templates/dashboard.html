@@ -1,0 +1,361 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Dashboard - Store Management{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Burger menu animations */
+    .burger-line {
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+    .burger-active .burger-line:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .burger-active .burger-line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .burger-active .burger-line:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    /* Stats card hover effects */
+    .stats-card {
+        transition: all 0.3s ease;
+    }
+
+        .stats-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+    /* Mobile menu overlay */
+    .menu-overlay {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen flex-col overflow-hidden">
+    <!-- Enhanced Mobile-First Header -->
+    <header class="flex-shrink-0 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-border dark:border-border-dark sticky top-0 z-50">
+        <div class="flex h-16 items-center justify-between px-4 sm:px-6">
+            <!-- Left: Burger Menu -->
+            <button id="menu-toggle"
+                    class="flex flex-col w-8 h-8 justify-center items-center space-y-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-1 transition-colors"
+                    onclick="toggleMenu()">
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+            </button>
+
+            <!-- Center: Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-lg">store</span>
+                </div>
+                <h1 class="text-lg font-bold hidden sm:block">Dashboard</h1>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="flex items-center gap-2">
+                <!-- Notifications -->
+                <div class="relative">
+                    <button class="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                            onclick="toggleNotifications()">
+                        <span class="material-symbols-rounded text-gray-600 dark:text-gray-300">notifications</span>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">3</span>
+                    </button>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                        onclick="toggleDarkMode()">
+                    <span class="material-symbols-rounded text-gray-600 dark:text-gray-300" id="theme-toggle">dark_mode</span>
+                </button>
+
+                <!-- Profile -->
+                <div class="w-8 h-8 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-sm">person</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Burger Menu Sidebar -->
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 menu-overlay z-40 hidden" onclick="closeMenu()"></div>
+    <div id="menu-sidebar" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white dark:bg-surface-dark border-l border-border dark:border-border-dark z-50 transform translate-x-full transition-transform duration-300">
+        <!-- Menu Header -->
+        <div class="p-6 border-b border-border dark:border-border-dark">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">Menu</h2>
+                <button onclick="closeMenu()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-surface dark:bg-background-dark rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white">person</span>
+                </div>
+                <div>
+                    <p class="font-semibold">Admin User</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">admin@store.com</p>
+                </div>
+            </div>
+        </div>
+
+ 
+        <!-- Menu Items -->
+        <nav class="p-6 space-y-2">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-4 p-4 rounded-xl bg-primary/10 text-primary font-medium">
+                <span class="material-symbols-rounded">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('orders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt_long</span>
+                <span>Orders</span>
+                <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ data.active_orders }}</span>
+            </a>
+            <a href="{{ url_for('create_order') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">add_circle</span>
+                <span>Create Order</span>
+            </a>
+            <a href="{{ url_for('customers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">group</span>
+                <span>Customers</span>
+            </a>
+            <a href="{{ url_for('items') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">inventory</span>
+                <span>Item Master</span>
+            </a>
+            <!-- ADD THESE TWO MISSING MENU ITEMS -->
+            <a href="{{ url_for('drivers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">drive_eta</span>
+                <span>Drivers</span>
+            </a>
+            <a href="{{ url_for('expenses') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt</span>
+                <span>Expenses</span>
+            </a>
+            <!-- END OF ADDED ITEMS -->
+            <a href="{{ url_for('delivery_charges') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">local_shipping</span>
+                <span>Delivery Charges</span>
+            </a>
+            <a href="{{ url_for('balance_due') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">account_balance_wallet</span>
+                <span>Balance Due</span>
+            </a>
+            <a href="{{ url_for('reminders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">schedule</span>
+                <span>Reminders</span>
+            </a>
+            <div class="border-t border-border dark:border-border-dark my-4"></div>
+
+            <a href="{{ url_for('settings') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">settings</span>
+                <span>Settings</span>
+            </a>
+            <a href="{{ url_for('help_support') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">help</span>
+                <span>Help & Support</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+                <span class="material-symbols-rounded">logout</span>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+        <div class="p-4 sm:p-6 space-y-6">
+
+
+            <!-- Stats Grid -->
+            <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="stats-card bg-white dark:bg-surface-dark p-4 sm:p-6 rounded-2xl border border-border dark:border-border-dark">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center">
+                            <span class="material-symbols-rounded text-green-600 dark:text-green-400 text-xl">trending_up</span>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold" id="today-sales">{{ "${:,}".format(data.today_sales) }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Today's Sales</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card bg-white dark:bg-surface-dark p-4 sm:p-6 rounded-2xl border border-border dark:border-border-dark">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
+                            <span class="material-symbols-rounded text-blue-600 dark:text-blue-400 text-xl">shopping_cart</span>
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold" id="active-orders">{{ data.active_orders }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Active Orders</p>
+                        </div>
+                    </div>
+                </div>
+
+
+            </section>
+            <!-- Upcoming Reminders -->
+            <section>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Upcoming Reminders</h2>
+                    <a href="{{ url_for('reminders') }}" class="text-primary text-sm hover:underline font-medium">View All</a>
+                </div>
+                <div id="upcoming-reminders" class="space-y-3">
+                    <!-- Upcoming reminders will be populated here -->
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section>
+                <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <a href="{{ url_for('create_order') }}" class="flex flex-col items-center gap-2 sm:gap-3 bg-primary hover:bg-primary-dark text-white p-4 sm:p-6 rounded-2xl transition-all transform hover:scale-105">
+                        <span class="material-symbols-rounded text-2xl">add_circle</span>
+                        <span class="font-semibold text-sm sm:text-base">New Order</span>
+                    </a>
+                    <a href="{{ url_for('delivery_charges') }}" class="flex flex-col items-center gap-2 sm:gap-3 bg-green-500 hover:bg-green-600 text-white p-4 sm:p-6 rounded-2xl transition-all transform hover:scale-105">
+                        <span class="material-symbols-rounded text-2xl">local_shipping</span>
+                        <span class="font-semibold text-sm sm:text-base">Delivery</span>
+                    </a>
+
+                </div>
+            </section>
+
+            <!-- Recent Activity -->
+            <section>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Recent Orders</h2>
+                    <a href="{{ url_for('orders') }}" class="text-primary text-sm hover:underline font-medium">View All</a>
+                </div>
+                <div class="space-y-3">
+                    {% for order in data.recent_orders %}
+                    <div class="flex items-center gap-4 bg-white dark:bg-surface-dark border border-border dark:border-border-dark p-4 rounded-2xl">
+                        <div class="w-10 h-10 bg-{% if order.status == 'Processing' %}blue{% elif order.status == 'Shipped' %}green{% else %}orange{% endif %}-100 dark:bg-{% if order.status == 'Processing' %}blue{% elif order.status == 'Shipped' %}green{% else %}orange{% endif %}-900/30 rounded-xl flex items-center justify-center">
+                            <span class="material-symbols-rounded text-{% if order.status == 'Processing' %}blue{% elif order.status == 'Shipped' %}green{% else %}orange{% endif %}-600 dark:text-{% if order.status == 'Processing' %}blue{% elif order.status == 'Shipped' %}green{% else %}orange{% endif %}-400 text-sm">
+                                {% if order.status == 'Processing' %}hourglass_empty{% elif order.status == 'Shipped' %}check_circle{% else %}pending{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium">{{ order.id }} - {{ order.customer }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ order.status }} • ${{ "%.2f"|format(order.total) }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- Notifications Panel -->
+<div id="notifications-panel" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="closeNotifications()">
+    <div class="absolute right-4 top-20 w-80 max-w-[90vw] bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-2xl shadow-xl" onclick="event.stopPropagation()">
+        <div class="p-4 border-b border-border dark:border-border-dark">
+            <div class="flex items-center justify-between">
+                <h3 class="font-semibold">Notifications</h3>
+                <button onclick="closeNotifications()" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                    <span class="material-symbols-rounded text-sm">close</span>
+                </button>
+            </div>
+        </div>
+        <div class="p-4 max-h-96 overflow-y-auto space-y-3">
+            <div class="flex gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                <span class="material-symbols-rounded text-red-600 dark:text-red-400">warning</span>
+                <div>
+                    <p class="text-sm font-medium">Order #12345 overdue</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">2 hours past due time</p>
+                </div>
+            </div>
+            <div class="flex gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <span class="material-symbols-rounded text-blue-600 dark:text-blue-400">info</span>
+                <div>
+                    <p class="text-sm font-medium">New order received</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Order #98765 - $285.50</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Menu Functions
+    function toggleMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.toggle('burger-active');
+        menuOverlay.classList.toggle('hidden');
+
+        if (menuSidebar.style.transform === 'translateX(0px)') {
+            menuSidebar.style.transform = 'translateX(100%)';
+        } else {
+            menuSidebar.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function closeMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.remove('burger-active');
+        menuOverlay.classList.add('hidden');
+        menuSidebar.style.transform = 'translateX(100%)';
+    }
+
+    // Notification Functions
+    function toggleNotifications() {
+        const panel = document.getElementById('notifications-panel');
+        panel.classList.toggle('hidden');
+    }
+
+    function closeNotifications() {
+        document.getElementById('notifications-panel').classList.add('hidden');
+    }
+
+    function refreshData() {
+        const btn = event.target.closest('button');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-rounded text-sm mr-2 animate-spin">progress_activity</span>Refreshing...';
+        btn.disabled = true;
+
+        setTimeout(() => {
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }, 2000);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        // Close menu on window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeMenu();
+            }
+        });
+
+        // Close notifications when clicking outside
+        document.addEventListener('click', function (e) {
+            const panel = document.getElementById('notifications-panel');
+            if (!panel.classList.contains('hidden') && !panel.contains(e.target) && !e.target.closest('[onclick*="toggleNotifications"]')) {
+                closeNotifications();
+            }
+        });
+    });
+</script>
+{% endblock %}

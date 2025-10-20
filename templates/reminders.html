@@ -1,0 +1,755 @@
+{% extends "base.html" %}
+
+{% block title %}Reminders - Store Management{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Burger menu animations */
+    .burger-line {
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+    .burger-active .burger-line:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .burger-active .burger-line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .burger-active .burger-line:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    /* Mobile menu overlay */
+    .menu-overlay {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    .reminder-card {
+        transition: all 0.2s ease;
+    }
+
+        .reminder-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+    .stats-card {
+        transition: all 0.3s ease;
+    }
+
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+    .priority-high {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .priority-medium {
+        background-color: #fef3c7;
+        color: #d97706;
+        border-color: #fde68a;
+    }
+
+    .priority-low {
+        background-color: #dcfce7;
+        color: #16a34a;
+        border-color: #bbf7d0;
+    }
+
+    .due-indicator {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen flex-col overflow-hidden">
+    <!-- Enhanced Mobile-First Header -->
+    <header class="flex-shrink-0 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-border dark:border-border-dark sticky top-0 z-50">
+        <div class="flex h-16 items-center justify-between px-4 sm:px-6">
+            <!-- Left: Burger Menu -->
+            <button id="menu-toggle"
+                    class="flex flex-col w-8 h-8 justify-center items-center space-y-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-1 transition-colors"
+                    onclick="toggleMenu()">
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+            </button>
+
+            <!-- Center: Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-purple-500 rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-lg">schedule</span>
+                </div>
+                <h1 class="text-lg font-bold hidden sm:block">Reminders</h1>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="flex items-center gap-2">
+                <!-- Add Reminder -->
+                <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                        onclick="showAddReminderModal()" title="Add New Reminder">
+                    <span class="material-symbols-rounded text-gray-600 dark:text-gray-300">add</span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                        onclick="toggleDarkMode()">
+                    <span class="material-symbols-rounded text-gray-600 dark:text-gray-300" id="theme-toggle">dark_mode</span>
+                </button>
+
+                <!-- Profile -->
+                <div class="w-8 h-8 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-sm">person</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Bar -->
+        <div class="p-4 space-y-3">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span class="material-symbols-rounded text-gray-500 dark:text-gray-400">search</span>
+                </div>
+                <input id="search-input" class="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-surface-dark border border-border dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-primary"
+                       placeholder="Search reminders..."
+                       type="search"
+                       oninput="filterReminders()" />
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex gap-2 overflow-x-auto">
+                <button onclick="filterByStatus('all')" class="reminder-filter active whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-primary text-white">
+                    All Reminders
+                </button>
+                <button onclick="filterByStatus('pending')" class="reminder-filter whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10">
+                    Pending
+                </button>
+                <button onclick="filterByStatus('overdue')" class="reminder-filter whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10">
+                    Overdue
+                </button>
+                <button onclick="filterByStatus('completed')" class="reminder-filter whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10">
+                    Completed
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Burger Menu Sidebar -->
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 menu-overlay z-40 hidden" onclick="closeMenu()"></div>
+    <div id="menu-sidebar" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white dark:bg-surface-dark border-l border-border dark:border-border-dark z-50 transform translate-x-full transition-transform duration-300">
+        <!-- Menu Header -->
+        <div class="p-6 border-b border-border dark:border-border-dark">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">Menu</h2>
+                <button onclick="closeMenu()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-surface dark:bg-background-dark rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white">person</span>
+                </div>
+                <div>
+                    <p class="font-semibold">Admin User</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">admin@store.com</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Items -->
+        <nav class="p-6 space-y-2">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('orders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt_long</span>
+                <span>Orders</span>
+                <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ data.active_orders if data is defined else '0' }}</span>
+            </a>
+            <a href="{{ url_for('create_order') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">add_circle</span>
+                <span>Create Order</span>
+            </a>
+            <a href="{{ url_for('customers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">group</span>
+                <span>Customers</span>
+            </a>
+            <a href="{{ url_for('items') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">inventory</span>
+                <span>Item Master</span>
+            </a>
+            <a href="{{ url_for('drivers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">drive_eta</span>
+                <span>Drivers</span>
+            </a>
+            <a href="{{ url_for('expenses') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt</span>
+                <span>Expenses</span>
+            </a>
+            <!-- REMINDERS SHOULD BE ACTIVE -->
+            <a href="{{ url_for('reminders') }}" class="flex items-center gap-4 p-4 rounded-xl bg-purple-500/10 text-purple-600 font-medium">
+                <span class="material-symbols-rounded">schedule</span>
+                <span>Reminders</span>
+            </a>
+            <a href="{{ url_for('delivery_charges') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">local_shipping</span>
+                <span>Delivery Charges</span>
+            </a>
+            <a href="{{ url_for('balance_due') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">account_balance_wallet</span>
+                <span>Balance Due</span>
+            </a>
+            <a href="{{ url_for('reminders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">schedule</span>
+                <span>Reminders</span>
+            </a>
+            <div class="border-t border-border dark:border-border-dark my-4"></div>
+
+            <a href="{{ url_for('settings') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">settings</span>
+                <span>Settings</span>
+            </a>
+            <a href="{{ url_for('help_support') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">help</span>
+                <span>Help & Support</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+                <span class="material-symbols-rounded">logout</span>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="stats-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full">
+                        <span class="material-symbols-rounded text-purple-600 dark:text-purple-400">schedule</span>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" id="total-reminders">{{ reminders|length }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Reminders</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full">
+                        <span class="material-symbols-rounded text-orange-600 dark:text-orange-400">pending</span>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" id="pending-reminders">0</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-red-100 dark:bg-red-900/30 p-2 rounded-full">
+                        <span class="material-symbols-rounded text-red-600 dark:text-red-400">warning</span>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" id="overdue-reminders">0</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
+                        <span class="material-symbols-rounded text-green-600 dark:text-green-400">check_circle</span>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" id="completed-reminders">0</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reminders List -->
+        <div id="reminders-list" class="space-y-4">
+            <!-- Reminders will be populated here -->
+        </div>
+
+        <!-- No Results State -->
+        <div id="no-results" class="hidden text-center py-12">
+            <span class="material-symbols-rounded text-6xl text-gray-500 dark:text-gray-400 mb-4 block">schedule</span>
+            <p class="text-lg font-medium">No reminders found</p>
+            <p class="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria</p>
+        </div>
+    </main>
+</div>
+
+<!-- Add Reminder Modal -->
+<div id="reminder-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-surface-dark w-full max-w-md rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-6 border-b border-border dark:border-border-dark">
+            <h3 id="modal-title" class="text-lg font-bold">Add New Reminder</h3>
+            <button onclick="closeReminderModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <form id="reminder-form" class="p-6 space-y-4" onsubmit="saveReminder(event)">
+            <div>
+                <label class="block text-sm font-medium mb-2">Title</label>
+                <input type="text" id="reminder-title" required class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary" placeholder="Enter reminder title">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Description</label>
+                <textarea id="reminder-description" rows="3" class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary" placeholder="Enter description (optional)"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Due Date</label>
+                    <input type="date" id="reminder-date" required class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Due Time</label>
+                    <input type="time" id="reminder-time" required class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Priority</label>
+                <select id="reminder-priority" class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary">
+                    <option value="high">High Priority</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="low">Low Priority</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeReminderModal()" class="flex-1 px-4 py-3 rounded-lg border border-border dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 rounded-lg bg-purple-500 text-white font-medium hover:bg-purple-600 transition-colors">
+                    <span id="save-btn-text">Add Reminder</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Sample reminders data (in real app, this would come from the server)
+    let reminders = {{ reminders|tojson }};
+    let editingReminder = null;
+
+    // Menu Functions
+    function toggleMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.toggle('burger-active');
+        menuOverlay.classList.toggle('hidden');
+
+        if (menuSidebar.style.transform === 'translateX(0px)') {
+            menuSidebar.style.transform = 'translateX(100%)';
+        } else {
+            menuSidebar.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function closeMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.remove('burger-active');
+        menuOverlay.classList.add('hidden');
+        menuSidebar.style.transform = 'translateX(100%)';
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function () {
+        loadReminders();
+        updateStats();
+
+        // Set default date/time for new reminders
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('reminder-date').value = tomorrow.toISOString().split('T')[0];
+        document.getElementById('reminder-time').value = '09:00';
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+            document.getElementById('theme-toggle').textContent = 'light_mode';
+        }
+
+        // Close menu on window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeMenu();
+            }
+        });
+    });
+
+    function loadReminders() {
+        const container = document.getElementById('reminders-list');
+        container.innerHTML = '';
+
+        if (reminders.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <span class="material-symbols-rounded text-6xl mb-4 block">schedule</span>
+                    <p class="text-lg font-medium mb-2">No reminders yet</p>
+                    <p class="text-sm">Click the + button to create your first reminder</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Sort reminders: pending overdue first, then by date/time
+        const sortedReminders = reminders.sort((a, b) => {
+            const aDateTime = new Date(`${a.due_date}T${a.due_time}`);
+            const bDateTime = new Date(`${b.due_date}T${b.due_time}`);
+            const now = new Date();
+            
+            const aOverdue = aDateTime < now && a.status === 'pending';
+            const bOverdue = bDateTime < now && b.status === 'pending';
+            
+            if (aOverdue && !bOverdue) return -1;
+            if (!aOverdue && bOverdue) return 1;
+            
+            return aDateTime - bDateTime;
+        });
+
+        sortedReminders.forEach(reminder => {
+            const reminderCard = createReminderCard(reminder);
+            container.appendChild(reminderCard);
+        });
+    }
+
+    function createReminderCard(reminder) {
+        const now = new Date();
+        const dueDateTime = new Date(`${reminder.due_date}T${reminder.due_time}`);
+        const isOverdue = dueDateTime < now && reminder.status === 'pending';
+        const isCompleted = reminder.status === 'completed';
+
+        const priorityClass = `priority-${reminder.priority}`;
+        const statusClass = isCompleted ? 'bg-green-100 text-green-800' : (isOverdue ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800');
+        const statusText = isCompleted ? 'Completed' : (isOverdue ? 'Overdue' : 'Pending');
+
+        const card = document.createElement('div');
+        card.className = `reminder-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4 ${isOverdue ? 'border-l-4 border-l-red-500' : ''}`;
+        card.setAttribute('data-reminder-id', reminder.id);
+        card.setAttribute('data-status', reminder.status);
+        card.setAttribute('data-priority', reminder.priority);
+        card.setAttribute('data-title', reminder.title.toLowerCase());
+        card.setAttribute('data-description', (reminder.description || '').toLowerCase());
+
+        card.innerHTML = `
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex items-start gap-3 flex-1">
+                    ${isOverdue ? '<div class="due-indicator w-3 h-3 bg-red-500 rounded-full mt-1"></div>' : ''}
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-gray-900 dark:text-gray-100 ${isCompleted ? 'line-through text-gray-500' : ''}">${reminder.title}</h3>
+                        ${reminder.description ? `<p class="text-sm text-gray-600 dark:text-gray-400 mt-1 ${isCompleted ? 'line-through' : ''}">${reminder.description}</p>` : ''}
+                        <div class="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-rounded text-xs">schedule</span>
+                                ${new Date(reminder.due_date).toLocaleDateString()} at ${reminder.due_time}
+                            </span>
+                            <span class="px-2 py-1 rounded-full ${priorityClass} text-xs font-medium">
+                                ${reminder.priority.charAt(0).toUpperCase() + reminder.priority.slice(1)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 ml-4">
+                    <span class="px-2 py-1 text-xs rounded-full ${statusClass} font-medium">
+                        ${statusText}
+                    </span>
+                    <div class="relative">
+                        <button onclick="showReminderActions(${reminder.id})" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors">
+                            <span class="material-symbols-rounded text-sm">more_vert</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            ${!isCompleted ? `
+            <div class="flex gap-2">
+                <button onclick="markAsCompleted(${reminder.id})" class="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                    <span class="material-symbols-rounded text-sm mr-1">check</span>
+                    Mark Complete
+                </button>
+                <button onclick="editReminder(${reminder.id})" class="px-3 py-2 border border-border dark:border-border-dark rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded text-sm">edit</span>
+                </button>
+            </div>
+            ` : `
+            <div class="flex gap-2">
+                <button onclick="markAsPending(${reminder.id})" class="flex-1 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm">
+                    <span class="material-symbols-rounded text-sm mr-1">refresh</span>
+                    Mark Pending
+                </button>
+                <button onclick="deleteReminder(${reminder.id})" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    <span class="material-symbols-rounded text-sm">delete</span>
+                </button>
+            </div>
+            `}
+        `;
+
+        return card;
+    }
+
+    function updateStats() {
+        const total = reminders.length;
+        const pending = reminders.filter(r => r.status === 'pending').length;
+        const completed = reminders.filter(r => r.status === 'completed').length;
+        
+        const now = new Date();
+        const overdue = reminders.filter(r => {
+            const dueDateTime = new Date(`${r.due_date}T${r.due_time}`);
+            return dueDateTime < now && r.status === 'pending';
+        }).length;
+
+        document.getElementById('total-reminders').textContent = total;
+        document.getElementById('pending-reminders').textContent = pending;
+        document.getElementById('overdue-reminders').textContent = overdue;
+        document.getElementById('completed-reminders').textContent = completed;
+    }
+
+    function filterReminders() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const reminderCards = document.querySelectorAll('.reminder-card');
+        let visibleReminders = 0;
+
+        reminderCards.forEach(card => {
+            const title = card.dataset.title;
+            const description = card.dataset.description;
+            const matches = title.includes(searchTerm) || description.includes(searchTerm);
+
+            if (matches) {
+                card.style.display = 'block';
+                visibleReminders++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Show/hide no results message
+        const noResults = document.getElementById('no-results');
+        const remindersList = document.getElementById('reminders-list');
+        if (visibleReminders === 0 && searchTerm) {
+            noResults.classList.remove('hidden');
+            remindersList.classList.add('hidden');
+        } else {
+            noResults.classList.add('hidden');
+            remindersList.classList.remove('hidden');
+        }
+    }
+
+    function filterByStatus(status) {
+        // Update active filter button
+        document.querySelectorAll('.reminder-filter').forEach(btn => {
+            btn.classList.remove('active', 'bg-primary', 'text-white');
+            btn.classList.add('bg-gray-100', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-gray-100');
+        });
+
+        event.target.classList.add('active', 'bg-primary', 'text-white');
+        event.target.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-gray-100');
+
+        const reminderCards = document.querySelectorAll('.reminder-card');
+        const now = new Date();
+
+        reminderCards.forEach(card => {
+            const cardStatus = card.dataset.status;
+            const reminderId = card.dataset.reminderId;
+            const reminder = reminders.find(r => r.id == reminderId);
+            
+            let shouldShow = false;
+            
+            if (status === 'all') {
+                shouldShow = true;
+            } else if (status === 'pending') {
+                shouldShow = cardStatus === 'pending';
+            } else if (status === 'completed') {
+                shouldShow = cardStatus === 'completed';
+            } else if (status === 'overdue') {
+                const dueDateTime = new Date(`${reminder.due_date}T${reminder.due_time}`);
+                shouldShow = dueDateTime < now && cardStatus === 'pending';
+            }
+
+            card.style.display = shouldShow ? 'block' : 'none';
+        });
+
+        // Clear search when filtering by status
+        document.getElementById('search-input').value = '';
+        document.getElementById('no-results').classList.add('hidden');
+        document.getElementById('reminders-list').classList.remove('hidden');
+    }
+
+    function showAddReminderModal() {
+        editingReminder = null;
+        document.getElementById('modal-title').textContent = 'Add New Reminder';
+        document.getElementById('save-btn-text').textContent = 'Add Reminder';
+        document.getElementById('reminder-form').reset();
+        
+        // Set default values
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('reminder-date').value = tomorrow.toISOString().split('T')[0];
+        document.getElementById('reminder-time').value = '09:00';
+        
+        document.getElementById('reminder-modal').classList.remove('hidden');
+    }
+
+    function editReminder(id) {
+        const reminder = reminders.find(r => r.id === id);
+        if (!reminder) return;
+
+        editingReminder = reminder;
+        document.getElementById('modal-title').textContent = 'Edit Reminder';
+        document.getElementById('save-btn-text').textContent = 'Update Reminder';
+        
+        document.getElementById('reminder-title').value = reminder.title;
+        document.getElementById('reminder-description').value = reminder.description || '';
+        document.getElementById('reminder-date').value = reminder.due_date;
+        document.getElementById('reminder-time').value = reminder.due_time;
+        document.getElementById('reminder-priority').value = reminder.priority;
+        
+        document.getElementById('reminder-modal').classList.remove('hidden');
+    }
+
+    function closeReminderModal() {
+        document.getElementById('reminder-modal').classList.add('hidden');
+        editingReminder = null;
+    }
+
+    function saveReminder(event) {
+        event.preventDefault();
+
+        const title = document.getElementById('reminder-title').value;
+        const description = document.getElementById('reminder-description').value;
+        const dueDate = document.getElementById('reminder-date').value;
+        const dueTime = document.getElementById('reminder-time').value;
+        const priority = document.getElementById('reminder-priority').value;
+
+        if (editingReminder) {
+            // Update existing reminder
+            const index = reminders.findIndex(r => r.id === editingReminder.id);
+            if (index !== -1) {
+                reminders[index] = {
+                    ...reminders[index],
+                    title,
+                    description,
+                    due_date: dueDate,
+                    due_time: dueTime,
+                    priority
+                };
+            }
+            showSuccessMessage(`Reminder "${title}" updated successfully`);
+        } else {
+            // Add new reminder
+            const newReminder = {
+                id: Date.now(),
+                title,
+                description,
+                due_date: dueDate,
+                due_time: dueTime,
+                status: 'pending',
+                priority,
+                created_by: 'Admin User',
+                created_date: new Date().toISOString().split('T')[0]
+            };
+            reminders.push(newReminder);
+            showSuccessMessage(`Reminder "${title}" added successfully`);
+        }
+
+        loadReminders();
+        updateStats();
+        closeReminderModal();
+    }
+
+    function markAsCompleted(id) {
+        const reminder = reminders.find(r => r.id === id);
+        if (reminder) {
+            reminder.status = 'completed';
+            loadReminders();
+            updateStats();
+            showSuccessMessage(`Reminder "${reminder.title}" marked as completed`);
+        }
+    }
+
+    function markAsPending(id) {
+        const reminder = reminders.find(r => r.id === id);
+        if (reminder) {
+            reminder.status = 'pending';
+            loadReminders();
+            updateStats();
+            showSuccessMessage(`Reminder "${reminder.title}" marked as pending`);
+        }
+    }
+
+    function deleteReminder(id) {
+        if (confirm('Are you sure you want to delete this reminder?')) {
+            const index = reminders.findIndex(r => r.id === id);
+            if (index !== -1) {
+                const deletedReminder = reminders.splice(index, 1)[0];
+                loadReminders();
+                updateStats();
+                showSuccessMessage(`Reminder "${deletedReminder.title}" deleted successfully`);
+            }
+        }
+    }
+
+    function showSuccessMessage(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successDiv.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-rounded">check_circle</span>
+                <span>${message}</span>
+            </div>
+        `;
+        document.body.appendChild(successDiv);
+
+        setTimeout(() => {
+            successDiv.remove();
+        }, 3000);
+    }
+
+    function toggleDarkMode() {
+        document.documentElement.classList.toggle('dark');
+        const toggle = document.getElementById('theme-toggle');
+        toggle.textContent = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
+        localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+    }
+
+    // Initialize modal close on backdrop click
+    document.getElementById('reminder-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeReminderModal();
+        }
+    });
+</script>
+{% endblock %}

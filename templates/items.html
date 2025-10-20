@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+
+{% block title %}Item Master - Store Management{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Burger menu animations */
+    .burger-line {
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+    .burger-active .burger-line:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .burger-active .burger-line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .burger-active .burger-line:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    /* Mobile menu overlay */
+    .menu-overlay {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    body {
+        min-height: max(884px, 100dvh);
+    }
+
+    .item-card {
+        transition: all 0.2s ease-in-out;
+    }
+
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(17, 115, 212, 0.1);
+        }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen flex-col overflow-hidden">
+    <!-- Enhanced Mobile-First Header -->
+    <header class="flex-shrink-0 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-border dark:border-border-dark sticky top-0 z-50">
+        <div class="flex h-16 items-center justify-between px-4 sm:px-6">
+            <!-- Left: Burger Menu -->
+            <button id="menu-toggle"
+                    class="flex flex-col w-8 h-8 justify-center items-center space-y-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-1 transition-colors"
+                    onclick="toggleMenu()">
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+            </button>
+
+            <!-- Center: Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-purple-500 rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-lg">inventory</span>
+                </div>
+                <h1 class="text-lg font-bold hidden sm:block">Item Master</h1>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="flex items-center gap-2">
+                <!-- Add Item -->
+                <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                        onclick="showAddItemModal()" title="Add New Item">
+                    <span class="material-symbols-rounded text-gray-600 dark:text-gray-300">add</span>
+                </button>
+
+                <!-- Profile -->
+                <div class="w-8 h-8 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-sm">person</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Bar -->
+        <div class="p-4 space-y-3">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span class="material-symbols-rounded text-gray-500 dark:text-gray-400">search</span>
+                </div>
+                <input id="search-input" class="w-full pl-10 pr-4 py-2 rounded-lg bg-white dark:bg-surface-dark border border-border dark:border-border-dark text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:border-primary"
+                       placeholder="Search items by size..."
+                       type="search"
+                       oninput="filterItems()" />
+            </div>
+
+            <!-- Category Filter -->
+            <div class="flex gap-2 overflow-x-auto">
+                <button onclick="filterByCategory('all')" class="category-filter active whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-primary text-white">
+                    All Items
+                </button>
+                <button onclick="filterByCategory('RINGS')" class="category-filter whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10">
+                    Rings
+                </button>
+                <button onclick="filterByCategory('NAGALS')" class="category-filter whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10">
+                    Nagals
+                </button>
+                <button onclick="filterByCategory('BRACELETS')" class="category-filter whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10">
+                    Bracelets
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Burger Menu Sidebar -->
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 menu-overlay z-40 hidden" onclick="closeMenu()"></div>
+    <div id="menu-sidebar" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white dark:bg-surface-dark border-l border-border dark:border-border-dark z-50 transform translate-x-full transition-transform duration-300">
+        <!-- Menu Header -->
+        <div class="p-6 border-b border-border dark:border-border-dark">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">Menu</h2>
+                <button onclick="closeMenu()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-surface dark:bg-background-dark rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white">person</span>
+                </div>
+                <div>
+                    <p class="font-semibold">Admin User</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">admin@store.com</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Items -->
+        <nav class="p-6 space-y-2">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-4 p-4 rounded-xl bg-primary/10 text-primary font-medium">
+                <span class="material-symbols-rounded">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('orders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt_long</span>
+                <span>Orders</span>
+                <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ data.active_orders }}</span>
+            </a>
+            <a href="{{ url_for('create_order') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">add_circle</span>
+                <span>Create Order</span>
+            </a>
+            <a href="{{ url_for('customers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">group</span>
+                <span>Customers</span>
+            </a>
+            <a href="{{ url_for('items') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">inventory</span>
+                <span>Item Master</span>
+            </a>
+            <!-- ADD THESE TWO MISSING MENU ITEMS -->
+            <a href="{{ url_for('drivers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">drive_eta</span>
+                <span>Drivers</span>
+            </a>
+            <a href="{{ url_for('expenses') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt</span>
+                <span>Expenses</span>
+            </a>
+            <!-- END OF ADDED ITEMS -->
+            <a href="{{ url_for('delivery_charges') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">local_shipping</span>
+                <span>Delivery Charges</span>
+            </a>
+            <a href="{{ url_for('balance_due') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">account_balance_wallet</span>
+                <span>Balance Due</span>
+            </a>
+            <a href="{{ url_for('reminders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">schedule</span>
+                <span>Reminders</span>
+            </a>
+            <div class="border-t border-border dark:border-border-dark my-4"></div>
+
+            <a href="{{ url_for('settings') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">settings</span>
+                <span>Settings</span>
+            </a>
+            <a href="{{ url_for('help_support') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">help</span>
+                <span>Help & Support</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+                <span class="material-symbols-rounded">logout</span>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4 space-y-4" id="items-container">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-primary/10 p-2 rounded-full">
+                        <span class="material-symbols-rounded text-primary">inventory</span>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" id="total-items">{% if items %}{{ items|length }}{% else %}8{% endif %}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
+                        <span class="material-symbols-rounded text-green-600 dark:text-green-400">category</span>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" id="total-categories">3</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Categories</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items List -->
+        <div id="items-list">
+            {% if items %}
+            {% set categories = items | groupby('category') %}
+            {% for category, category_items in categories %}
+            <div class="item-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4 space-y-4 mb-4" data-category="{{ category }}">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">{{ category }}</h2>
+                    <button onclick="showAddItemModal('{{ category }}')" class="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-primary border border-primary hover:bg-primary/10">
+                        <span class="material-symbols-rounded mr-1.5 text-sm">add</span>
+                        Add Item
+                    </button>
+                </div>
+                <div class="space-y-3 pt-2">
+                    {% for item in category_items %}
+                    <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 {% if not loop.last %}border-b border-border dark:border-border-dark pb-3{% endif %}" data-item-size="{{ item.name }}">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                            <p class="font-semibold">{{ item.name }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                            <p class="font-semibold">${{ "%.2f"|format(item.price) }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Stock</p>
+                            <p class="font-semibold">{{ item.stock }}</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editItem('{{ category }}', '{{ item.name }}', {{ item.price }}, {{ item.stock }})" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteItem('{{ category }}', '{{ item.name }}')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Sample Items when no data from Flask -->
+            <!-- RINGS Category -->
+            <div class="item-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4 space-y-4 mb-4" data-category="RINGS">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">RINGS</h2>
+                    <button onclick="showAddItemModal('RINGS')" class="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-primary border border-primary hover:bg-primary/10">
+                        <span class="material-symbols-rounded mr-1.5 text-sm">add</span>
+                        Add Item
+                    </button>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 border-b border-border dark:border-border-dark pb-3" data-item-size="ANGLER RINGS">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                            <p class="font-semibold">ANGLER RINGS</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                            <p class="font-semibold">$200.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Basic Price</p>
+                            <p class="font-semibold">$180.00</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editItem('RINGS', 'ANGLER RINGS', 200.00, 180.00)" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteItem('RINGS', 'ANGLER RINGS')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 border-b border-border dark:border-border-dark pb-3" data-item-size="SMALL RINGS">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                            <p class="font-semibold">SMALL RINGS</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                            <p class="font-semibold">$250.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Basic Price</p>
+                            <p class="font-semibold">$230.00</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editItem('RINGS', 'SMALL RINGS', 250.00, 230.00)" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteItem('RINGS', 'SMALL RINGS')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4" data-item-size="FLAT RINGS">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                            <p class="font-semibold">FLAT RINGS</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                            <p class="font-semibold">$50.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Basic Price</p>
+                            <p class="font-semibold">$45.00</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editItem('RINGS', 'FLAT RINGS', 50.00, 45.00)" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteItem('RINGS', 'FLAT RINGS')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NAGALS Category -->
+            <div class="item-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4 space-y-4 mb-4" data-category="NAGALS">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">NAGALS</h2>
+                    <button onclick="showAddItemModal('NAGALS')" class="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-primary border border-primary hover:bg-primary/10">
+                        <span class="material-symbols-rounded mr-1.5 text-sm">add</span>
+                        Add Item
+                    </button>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 border-b border-border dark:border-border-dark pb-3" data-item-size="20MM NAGALS">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                            <p class="font-semibold">20MM NAGALS</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                            <p class="font-semibold">$300.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Basic Price</p>
+                            <p class="font-semibold">$270.00</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editItem('NAGALS', '20MM NAGALS', 300.00, 270.00)" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteItem('NAGALS', '20MM NAGALS')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4" data-item-size="25MM NAGALS">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                            <p class="font-semibold">25MM NAGALS</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                            <p class="font-semibold">$200.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Basic Price</p>
+                            <p class="font-semibold">$180.00</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editItem('NAGALS', '25MM NAGALS', 200.00, 180.00)" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteItem('NAGALS', '25MM NAGALS')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BRACELETS Category -->
+            <div class="item-card bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4 space-y-4 mb-4" data-category="BRACELETS">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold">BRACELETS</h2>
+                    <button onclick="showAddItemModal('BRACELETS')" class="flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md text-primary border border-primary hover:bg-primary/10">
+                        <span class="material-symbols-rounded mr-1.5 text-sm">add</span>
+                        Add Item
+                    </button>
+                </div>
+                <div class="space-y-3 pt-2">
+                    <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4" data-item-size="M">
+                        <div class="text-left">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                            <p class="font-semibold">M</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                            <p class="font-semibold">$150.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Basic Price</p>
+                            <p class="font-semibold">$140.00</p>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editItem('BRACELETS', 'M', 150.00, 140.00)" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                                <span class="material-symbols-rounded text-sm">edit</span>
+                            </button>
+                            <button onclick="deleteItem('BRACELETS', 'M')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- No Results State -->
+        <div id="no-results" class="hidden text-center py-12">
+            <span class="material-symbols-rounded text-6xl text-gray-500 dark:text-gray-400 mb-4 block">search_off</span>
+            <p class="text-lg font-medium">No items found</p>
+            <p class="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria</p>
+        </div>
+    </main>
+</div>
+
+<!-- Add/Edit Item Modal -->
+<div id="item-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-surface-dark w-full max-w-md rounded-2xl shadow-xl">
+        <div class="flex items-center justify-between p-6 border-b border-border dark:border-border-dark">
+            <h3 id="modal-title" class="text-lg font-bold">Add New Item</h3>
+            <button onclick="closeItemModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <form id="item-form" class="p-6 space-y-4" onsubmit="saveItem(event)">
+            <div>
+                <label class="block text-sm font-medium mb-2">Item Category</label>
+                <select id="item-category" required class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary">
+                    <option value="">Select category</option>
+                    <option value="RINGS">RINGS</option>
+                    <option value="NAGALS">NAGALS</option>
+                    <option value="BRACELETS">BRACELETS</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Item Size</label>
+                <input type="text" id="item-size" required class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary" placeholder="Enter item size">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Unit Price ($)</label>
+                    <input type="number" step="0.01" id="unit-price" required class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Stock</label>
+                    <input type="number" id="basic-price" required class="w-full p-3 rounded-lg border border-border dark:border-border-dark bg-white dark:bg-surface-dark focus:ring-2 focus:ring-primary" placeholder="0">
+                </div>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeItemModal()" class="flex-1 px-4 py-3 rounded-lg border border-border dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors">
+                    <span id="save-btn-text">Add Item</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Menu Functions
+    function toggleMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.toggle('burger-active');
+        menuOverlay.classList.toggle('hidden');
+
+        if (menuSidebar.style.transform === 'translateX(0px)') {
+            menuSidebar.style.transform = 'translateX(100%)';
+        } else {
+            menuSidebar.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function closeMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.remove('burger-active');
+        menuOverlay.classList.add('hidden');
+        menuSidebar.style.transform = 'translateX(100%)';
+    }
+
+    let editingItem = null;
+
+    function goBack() {
+        window.history.back();
+    }
+
+    // Search and Filter Functions
+    function filterItems() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const itemRows = document.querySelectorAll('.item-row');
+        const categories = document.querySelectorAll('[data-category]');
+        let visibleItems = 0;
+
+        itemRows.forEach(row => {
+            const itemSize = row.dataset.itemSize.toLowerCase();
+            const matches = itemSize.includes(searchTerm);
+
+            if (matches) {
+                row.style.display = 'grid';
+                visibleItems++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Hide categories with no visible items
+        categories.forEach(category => {
+            const visibleRowsInCategory = category.querySelectorAll('.item-row[style="display: grid;"]').length;
+            if (visibleRowsInCategory === 0 && searchTerm) {
+                category.style.display = 'none';
+            } else {
+                category.style.display = 'block';
+            }
+        });
+
+        // Show/hide no results message
+        const noResults = document.getElementById('no-results');
+        if (visibleItems === 0 && searchTerm) {
+            noResults.classList.remove('hidden');
+        } else {
+            noResults.classList.add('hidden');
+        }
+
+        updateStats();
+    }
+
+    function filterByCategory(category) {
+        // Update active filter button
+        document.querySelectorAll('.category-filter').forEach(btn => {
+            btn.classList.remove('active', 'bg-primary', 'text-white');
+            btn.classList.add('bg-gray-100', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-gray-100');
+        });
+
+        event.target.classList.add('active', 'bg-primary', 'text-white');
+        event.target.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-gray-100');
+
+        const categories = document.querySelectorAll('[data-category]');
+
+        categories.forEach(cat => {
+            if (category === 'all' || cat.dataset.category === category) {
+                cat.style.display = 'block';
+            } else {
+                cat.style.display = 'none';
+            }
+        });
+
+        // Clear search when filtering by category
+        document.getElementById('search-input').value = '';
+        document.getElementById('no-results').classList.add('hidden');
+
+        updateStats();
+    }
+
+    function updateStats() {
+        const visibleItems = document.querySelectorAll('.item-row[style="display: grid;"], .item-row:not([style])').length;
+        const visibleCategories = document.querySelectorAll('[data-category][style="display: block;"], [data-category]:not([style])').length;
+
+        document.getElementById('total-items').textContent = visibleItems;
+        document.getElementById('total-categories').textContent = visibleCategories;
+    }
+
+    // Modal Functions
+    function showAddItemModal(category = '') {
+        editingItem = null;
+        document.getElementById('modal-title').textContent = 'Add New Item';
+        document.getElementById('save-btn-text').textContent = 'Add Item';
+        document.getElementById('item-form').reset();
+
+        if (category) {
+            document.getElementById('item-category').value = category;
+        }
+
+        document.getElementById('item-modal').classList.remove('hidden');
+    }
+
+    function editItem(category, itemSize, unitPrice, basicPrice) {
+        editingItem = { category, itemSize };
+        document.getElementById('modal-title').textContent = 'Edit Item';
+        document.getElementById('save-btn-text').textContent = 'Update Item';
+
+        document.getElementById('item-category').value = category;
+        document.getElementById('item-size').value = itemSize;
+        document.getElementById('unit-price').value = unitPrice;
+        document.getElementById('basic-price').value = basicPrice;
+
+        document.getElementById('item-modal').classList.remove('hidden');
+    }
+
+    function closeItemModal() {
+        document.getElementById('item-modal').classList.add('hidden');
+        editingItem = null;
+    }
+
+    function saveItem(event) {
+        event.preventDefault();
+
+        const category = document.getElementById('item-category').value;
+        const itemSize = document.getElementById('item-size').value;
+        const unitPrice = parseFloat(document.getElementById('unit-price').value);
+        const basicPrice = parseFloat(document.getElementById('basic-price').value);
+
+        if (editingItem) {
+            // Update existing item
+            updateItemInDOM(editingItem.category, editingItem.itemSize, category, itemSize, unitPrice, basicPrice);
+            alert('Item updated successfully!');
+        } else {
+            // Add new item
+            addItemToDOM(category, itemSize, unitPrice, basicPrice);
+            alert('Item added successfully!');
+        }
+
+        closeItemModal();
+        updateStats();
+    }
+
+    function addItemToDOM(category, itemSize, unitPrice, basicPrice) {
+        const categoryDiv = document.querySelector(`[data-category="${category}"] .space-y-3`);
+
+        const itemHTML = `
+            <div class="item-row grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 border-b border-border dark:border-border-dark pb-3" data-item-size="${itemSize}">
+                <div class="text-left">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Size</p>
+                    <p class="font-semibold">${itemSize}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Unit Price</p>
+                    <p class="font-semibold">$${unitPrice.toFixed(2)}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Stock</p>
+                    <p class="font-semibold">${basicPrice}</p>
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="editItem('${category}', '${itemSize}', ${unitPrice}, ${basicPrice})" class="p-1 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded" title="Edit">
+                        <span class="material-symbols-rounded text-sm">edit</span>
+                    </button>
+                    <button onclick="deleteItem('${category}', '${itemSize}')" class="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded" title="Delete">
+                        <span class="material-symbols-rounded text-sm">delete</span>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        categoryDiv.insertAdjacentHTML('beforeend', itemHTML);
+    }
+
+    function updateItemInDOM(oldCategory, oldItemSize, newCategory, newItemSize, unitPrice, basicPrice) {
+        // Find and remove old item
+        const oldItem = document.querySelector(`[data-category="${oldCategory}"] [data-item-size="${oldItemSize}"]`);
+        if (oldItem) {
+            oldItem.remove();
+        }
+
+        // Add updated item to new category
+        addItemToDOM(newCategory, newItemSize, unitPrice, basicPrice);
+    }
+
+    function deleteItem(category, itemSize) {
+        if (confirm(`Are you sure you want to delete "${itemSize}"?`)) {
+            const itemRow = document.querySelector(`[data-category="${category}"] [data-item-size="${itemSize}"]`);
+            if (itemRow) {
+                itemRow.remove();
+                alert('Item deleted successfully!');
+                updateStats();
+            }
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        updateStats();
+
+        // Close menu on window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeMenu();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('item-modal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeItemModal();
+            }
+        });
+    });
+</script>
+{% endblock %}

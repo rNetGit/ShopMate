@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Driver Master - Store Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "content-light": "#1f2937",
+                        "content-dark": "#e5e7eb",
+                        "subtle-light": "#6b7280",
+                        "subtle-dark": "#9ca3af",
+                        "border-light": "#e5e7eb",
+                        "border-dark": "#374151"
+                    },
+                    fontFamily: {
+                        display: ["Manrope", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+
+        /* Burger menu animations */
+        .burger-line {
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+
+        .burger-active .burger-line:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+
+        .burger-active .burger-line:nth-child(2) {
+            opacity: 0;
+        }
+
+        .burger-active .burger-line:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
+        /* Mobile menu overlay */
+        .menu-overlay {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .driver-card {
+            transition: all 0.3s ease;
+        }
+
+            .driver-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+
+        .stats-card {
+            transition: all 0.2s ease;
+        }
+
+            .stats-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+
+        .status-available {
+            background-color: #10b981;
+        }
+
+        .status-busy {
+            background-color: #f59e0b;
+        }
+
+        .status-off-duty {
+            background-color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-content-light dark:text-content-dark">
+    <div class="flex h-screen flex-col">
+        <!-- Enhanced Mobile-First Header -->
+        <header class="flex-shrink-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-border-light dark:border-border-dark sticky top-0 z-50">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6">
+                <!-- Left: Burger Menu -->
+                <button id="menu-toggle"
+                        class="flex flex-col w-8 h-8 justify-center items-center space-y-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-1 transition-colors"
+                        onclick="toggleMenu()">
+                    <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                    <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                    <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                </button>
+
+                <!-- Center: Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-sm">drive_eta</span>
+                    </div>
+                    <h1 class="text-lg font-bold hidden sm:block">Driver Master</h1>
+                </div>
+
+                <!-- Right: Actions -->
+                <div class="flex items-center gap-2">
+                    <!-- Add Driver -->
+                    <button onclick="showAddDriverModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Add New Driver">
+                        <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">add</span>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                        <span class="material-symbols-outlined text-gray-600 dark:text-gray-300" id="theme-toggle">dark_mode</span>
+                    </button>
+
+                    <!-- Profile -->
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary to-primary rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-sm">person</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Burger Menu Sidebar -->
+        <div id="menu-overlay" class="fixed inset-0 bg-black/50 menu-overlay z-40 hidden" onclick="closeMenu()"></div>
+        <div id="menu-sidebar" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white dark:bg-background-dark border-l border-border-light dark:border-border-dark z-50 transform translate-x-full transition-transform duration-300">
+            <!-- Menu Header -->
+            <div class="p-6 border-b border-border-light dark:border-border-dark">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Menu</h2>
+                    <button onclick="closeMenu()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white">person</span>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Admin User</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">admin@store.com</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Items -->
+            <nav class="p-6 space-y-2">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center gap-4 p-4 rounded-xl bg-primary/10 text-primary font-medium">
+                    <span class="material-symbols-rounded">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('orders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">receipt_long</span>
+                    <span>Orders</span>
+                    <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ data.active_orders }}</span>
+                </a>
+                <a href="{{ url_for('create_order') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">add_circle</span>
+                    <span>Create Order</span>
+                </a>
+                <a href="{{ url_for('customers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">group</span>
+                    <span>Customers</span>
+                </a>
+                <a href="{{ url_for('items') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">inventory</span>
+                    <span>Item Master</span>
+                </a>
+                <!-- ADD THESE TWO MISSING MENU ITEMS -->
+                <a href="{{ url_for('drivers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">drive_eta</span>
+                    <span>Drivers</span>
+                </a>
+                <a href="{{ url_for('expenses') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">receipt</span>
+                    <span>Expenses</span>
+                </a>
+                <!-- END OF ADDED ITEMS -->
+                <a href="{{ url_for('delivery_charges') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">local_shipping</span>
+                    <span>Delivery Charges</span>
+                </a>
+                <a href="{{ url_for('balance_due') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">account_balance_wallet</span>
+                    <span>Balance Due</span>
+                </a>
+                <a href="{{ url_for('reminders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">schedule</span>
+                    <span>Reminders</span>
+                </a>
+                <div class="border-t border-border dark:border-border-dark my-4"></div>
+
+                <a href="{{ url_for('settings') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">settings</span>
+                    <span>Settings</span>
+                </a>
+                <a href="{{ url_for('help_support') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">help</span>
+                    <span>Help & Support</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+                    <span class="material-symbols-rounded">logout</span>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </div>
+
+        <main class="flex-1 overflow-y-auto">
+            <div class="p-4 space-y-6">
+                <!-- Search and Filter -->
+                <section>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1 relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-subtle-light dark:text-subtle-dark">search</span>
+                            <input type="text" placeholder="Search drivers by name, vehicle, or phone..."
+                                   class="w-full pl-10 pr-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark text-content-light dark:text-content-dark"
+                                   oninput="searchDrivers(this.value)">
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="filterByStatus('all')" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium" id="filter-all">All Drivers</button>
+                            <button onclick="filterByStatus('available')" class="px-4 py-2 bg-white dark:bg-background-dark border border-border-light dark:border-border-dark text-content-light dark:text-content-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800" id="filter-available">Available</button>
+                            <button onclick="filterByStatus('busy')" class="px-4 py-2 bg-white dark:bg-background-dark border border-border-light dark:border-border-dark text-content-light dark:text-content-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800" id="filter-busy">Busy</button>
+                            <button onclick="filterByStatus('off-duty')" class="px-4 py-2 bg-white dark:bg-background-dark border border-border-light dark:border-border-dark text-content-light dark:text-content-dark rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800" id="filter-off-duty">Off Duty</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Stats Overview -->
+                <section>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">drive_eta</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="total-drivers">8</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">Total Drivers</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-green-600 dark:text-green-400">check_circle</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="available-drivers">5</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">Available</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-orange-100 dark:bg-orange-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-orange-600 dark:text-orange-400">local_shipping</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="busy-drivers">2</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">On Delivery</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-red-600 dark:text-red-400">pause_circle</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="off-duty-drivers">1</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">Off Duty</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Driver Cards -->
+                <section>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="drivers-grid">
+                        <!-- Driver cards will be populated here -->
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Driver Modal -->
+    <div id="add-driver-modal" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="closeModal('add-driver-modal')">
+        <div class="absolute inset-x-4 top-1/2 transform -translate-y-1/2 max-w-md mx-auto bg-white dark:bg-background-dark rounded-xl shadow-xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-content-light dark:text-content-dark">Add New Driver</h3>
+                    <button onclick="closeModal('add-driver-modal')" class="text-subtle-light dark:text-subtle-dark hover:text-content-light dark:hover:text-content-dark">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form onsubmit="addNewDriver(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Driver Name</label>
+                        <input type="text" name="driverName" placeholder="e.g., John Smith" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Phone Number</label>
+                        <input type="tel" name="phoneNumber" placeholder="e.g., +91 9876543210" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Vehicle Number</label>
+                        <input type="text" name="vehicleNumber" placeholder="e.g., AP16TU1652" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Area/Route</label>
+                        <input type="text" name="area" placeholder="e.g., Hyderabad - Bangalore" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">License Number</label>
+                        <input type="text" name="licenseNumber" placeholder="e.g., AP1620110012345" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Address</label>
+                        <textarea name="address" rows="2" placeholder="Complete address..." required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Status</label>
+                        <select name="status" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                            <option value="available">Available</option>
+                            <option value="busy">Busy</option>
+                            <option value="off-duty">Off Duty</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeModal('add-driver-modal')" class="flex-1 px-4 py-2 border border-border-light dark:border-border-dark rounded-lg text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                            Add Driver
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver Details Modal -->
+    <div id="driver-details-modal" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="closeModal('driver-details-modal')">
+        <div class="absolute inset-x-4 top-1/2 transform -translate-y-1/2 max-w-lg mx-auto bg-white dark:bg-background-dark rounded-xl shadow-xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-content-light dark:text-content-dark">Driver Details</h3>
+                    <button onclick="closeModal('driver-details-modal')" class="text-subtle-light dark:text-subtle-dark hover:text-content-light dark:hover:text-content-dark">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div id="driver-details-content">
+                    <!-- Driver details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Driver Modal -->
+    <div id="edit-driver-modal" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="closeModal('edit-driver-modal')">
+        <div class="absolute inset-x-4 top-1/2 transform -translate-y-1/2 max-w-md mx-auto bg-white dark:bg-background-dark rounded-xl shadow-xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-content-light dark:text-content-dark">Edit Driver</h3>
+                    <button onclick="closeModal('edit-driver-modal')" class="text-subtle-light dark:text-subtle-dark hover:text-content-light dark:hover:text-content-dark">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form onsubmit="updateDriver(event)" class="space-y-4" id="edit-driver-form">
+                    <!-- Edit form will be populated here -->
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample driver data
+        let driversData = [
+            {
+                id: 1,
+                name: "Rajesh Kumar",
+                phone: "+91 9876543210",
+                vehicleNumber: "AP16TU1652",
+                area: "Hyderabad - Bangalore",
+                licenseNumber: "AP1620110012345",
+                address: "123 Main Street, Hyderabad, Telangana 500001",
+                status: "available",
+                joinDate: "2023-01-15",
+                totalDeliveries: 127
+            },
+            {
+                id: 2,
+                name: "Suresh Reddy",
+                phone: "+91 9988776655",
+                vehicleNumber: "AP20TC0477",
+                area: "Chennai - Bangalore",
+                licenseNumber: "TN0520110098765",
+                address: "456 Park Road, Chennai, Tamil Nadu 600001",
+                status: "busy",
+                joinDate: "2023-03-10",
+                totalDeliveries: 98
+            },
+            {
+                id: 3,
+                name: "Arjun Singh",
+                phone: "+91 8765432109",
+                vehicleNumber: "AP26TT1969",
+                area: "Mumbai - Pune",
+                licenseNumber: "MH1220110054321",
+                address: "789 Business District, Mumbai, Maharashtra 400001",
+                status: "available",
+                joinDate: "2022-11-20",
+                totalDeliveries: 203
+            },
+            {
+                id: 4,
+                name: "Vikram Sharma",
+                phone: "+91 7654321098",
+                vehicleNumber: "TS02UB3830",
+                area: "Delhi - Jaipur",
+                licenseNumber: "DL0820110067890",
+                address: "321 Commercial Area, Delhi 110001",
+                status: "available",
+                joinDate: "2023-02-05",
+                totalDeliveries: 156
+            },
+            {
+                id: 5,
+                name: "Mahesh Patel",
+                phone: "+91 6543210987",
+                vehicleNumber: "GJ05AB1234",
+                area: "Ahmedabad - Surat",
+                licenseNumber: "GJ0520110023456",
+                address: "654 Industrial Estate, Ahmedabad, Gujarat 380001",
+                status: "available",
+                joinDate: "2023-04-12",
+                totalDeliveries: 89
+            },
+            {
+                id: 6,
+                name: "Ravi Kiran",
+                phone: "+91 5432109876",
+                vehicleNumber: "KA03MN5678",
+                area: "Bangalore - Mysore",
+                licenseNumber: "KA0320110034567",
+                address: "987 Tech Park, Bangalore, Karnataka 560001",
+                status: "busy",
+                joinDate: "2022-12-01",
+                totalDeliveries: 234
+            },
+            {
+                id: 7,
+                name: "Deepak Gupta",
+                phone: "+91 4321098765",
+                vehicleNumber: "RJ14CD9012",
+                area: "Jaipur - Udaipur",
+                licenseNumber: "RJ1420110045678",
+                address: "147 Heritage City, Jaipur, Rajasthan 302001",
+                status: "available",
+                joinDate: "2023-01-28",
+                totalDeliveries: 112
+            },
+            {
+                id: 8,
+                name: "Anil Yadav",
+                phone: "+91 3210987654",
+                vehicleNumber: "UP32EF3456",
+                area: "Noida - Lucknow",
+                licenseNumber: "UP3220110056789",
+                address: "258 Metro Station Road, Noida, Uttar Pradesh 201301",
+                status: "off-duty",
+                joinDate: "2022-10-15",
+                totalDeliveries: 178
+            }
+        ];
+
+        let currentFilter = 'all';
+
+        // Menu Functions
+        function toggleMenu() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const menuSidebar = document.getElementById('menu-sidebar');
+
+            menuToggle.classList.toggle('burger-active');
+            menuOverlay.classList.toggle('hidden');
+
+            if (menuSidebar.style.transform === 'translateX(0px)') {
+                menuSidebar.style.transform = 'translateX(100%)';
+            } else {
+                menuSidebar.style.transform = 'translateX(0px)';
+            }
+        }
+
+        function closeMenu() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const menuSidebar = document.getElementById('menu-sidebar');
+
+            menuToggle.classList.remove('burger-active');
+            menuOverlay.classList.add('hidden');
+            menuSidebar.style.transform = 'translateX(100%)';
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDrivers();
+            updateStats();
+
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-toggle').textContent = 'light_mode';
+            }
+
+            // Close menu on window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    closeMenu();
+                }
+            });
+        });
+
+        function loadDrivers() {
+            const grid = document.getElementById('drivers-grid');
+            grid.innerHTML = '';
+
+            let filteredDrivers = driversData;
+
+            if (currentFilter !== 'all') {
+                filteredDrivers = driversData.filter(driver => driver.status === currentFilter);
+            }
+
+            if (filteredDrivers.length === 0) {
+                grid.innerHTML = `
+                            <div class="col-span-full text-center py-12 text-subtle-light dark:text-subtle-dark">
+                                <span class="material-symbols-outlined text-6xl mb-4 block">drive_eta</span>
+                                <p class="text-lg font-medium mb-2">No drivers found</p>
+                                <p class="text-sm">Try adjusting your search or filter criteria</p>
+                            </div>
+                        `;
+                return;
+            }
+
+            filteredDrivers.forEach(driver => {
+                const statusColor = getStatusColor(driver.status);
+                const statusText = getStatusText(driver.status);
+
+                const driverCard = document.createElement('div');
+                driverCard.className = 'driver-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-4 shadow-sm';
+                driverCard.innerHTML = `
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-primary">person</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-content-light dark:text-content-dark">${driver.name}</h3>
+                                        <p class="text-sm text-subtle-light dark:text-subtle-dark">${driver.vehicleNumber}</p>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-white text-xs font-medium rounded-full ${statusColor}">
+                                    ${statusText}
+                                </span>
+                            </div>
+
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center gap-2 text-sm text-content-light dark:text-content-dark">
+                                    <span class="material-symbols-outlined text-sm text-subtle-light dark:text-subtle-dark">phone</span>
+                                    <span>${driver.phone}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-content-light dark:text-content-dark">
+                                    <span class="material-symbols-outlined text-sm text-subtle-light dark:text-subtle-dark">location_on</span>
+                                    <span>${driver.area}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-content-light dark:text-content-dark">
+                                    <span class="material-symbols-outlined text-sm text-subtle-light dark:text-subtle-dark">local_shipping</span>
+                                    <span>${driver.totalDeliveries} deliveries</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button onclick="viewDriverDetails(${driver.id})" class="flex-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm">
+                                    <span class="material-symbols-outlined text-sm mr-1">visibility</span>
+                                    View Details
+                                </button>
+                                <button onclick="editDriver(${driver.id})" class="px-3 py-2 border border-border-light dark:border-border-dark rounded-lg text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                    <span class="material-symbols-outlined text-sm">edit</span>
+                                </button>
+                            </div>
+                        `;
+                grid.appendChild(driverCard);
+            });
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'available': return 'status-available';
+                case 'busy': return 'status-busy';
+                case 'off-duty': return 'status-off-duty';
+                default: return 'bg-gray-500';
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'available': return 'Available';
+                case 'busy': return 'On Delivery';
+                case 'off-duty': return 'Off Duty';
+                default: return 'Unknown';
+            }
+        }
+
+        function updateStats() {
+            const totalDrivers = driversData.length;
+            const availableDrivers = driversData.filter(d => d.status === 'available').length;
+            const busyDrivers = driversData.filter(d => d.status === 'busy').length;
+            const offDutyDrivers = driversData.filter(d => d.status === 'off-duty').length;
+
+            document.getElementById('total-drivers').textContent = totalDrivers;
+            document.getElementById('available-drivers').textContent = availableDrivers;
+            document.getElementById('busy-drivers').textContent = busyDrivers;
+            document.getElementById('off-duty-drivers').textContent = offDutyDrivers;
+        }
+
+        function searchDrivers(query) {
+            const filteredDrivers = driversData.filter(driver =>
+                driver.name.toLowerCase().includes(query.toLowerCase()) ||
+                driver.phone.includes(query) ||
+                driver.vehicleNumber.toLowerCase().includes(query.toLowerCase()) ||
+                driver.area.toLowerCase().includes(query.toLowerCase())
+            );
+
+            displayFilteredDrivers(filteredDrivers);
+        }
+
+        function filterByStatus(status) {
+            currentFilter = status;
+
+            // Update filter button styles
+            document.querySelectorAll('[id^="filter-"]').forEach(btn => {
+                btn.className = btn.className.replace('bg-primary text-white', 'bg-white dark:bg-background-dark border border-border-light dark:border-border-dark text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800');
+            });
+
+            document.getElementById(`filter-${status}`).className = document.getElementById(`filter-${status}`).className.replace('bg-white dark:bg-background-dark border border-border-light dark:border-border-dark text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800', 'bg-primary text-white');
+
+            loadDrivers();
+        }
+
+        function displayFilteredDrivers(drivers) {
+            const grid = document.getElementById('drivers-grid');
+            grid.innerHTML = '';
+
+            if (drivers.length === 0) {
+                grid.innerHTML = `
+                            <div class="col-span-full text-center py-12 text-subtle-light dark:text-subtle-dark">
+                                <span class="material-symbols-outlined text-6xl mb-4 block">search_off</span>
+                                <p class="text-lg font-medium mb-2">No drivers found</p>
+                                <p class="text-sm">Try adjusting your search criteria</p>
+                            </div>
+                        `;
+                return;
+            }
+
+            drivers.forEach(driver => {
+                const statusColor = getStatusColor(driver.status);
+                const statusText = getStatusText(driver.status);
+
+                const driverCard = document.createElement('div');
+                driverCard.className = 'driver-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-4 shadow-sm';
+                driverCard.innerHTML = `
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-primary">person</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-content-light dark:text-content-dark">${driver.name}</h3>
+                                        <p class="text-sm text-subtle-light dark:text-subtle-dark">${driver.vehicleNumber}</p>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-white text-xs font-medium rounded-full ${statusColor}">
+                                    ${statusText}
+                                </span>
+                            </div>
+
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center gap-2 text-sm text-content-light dark:text-content-dark">
+                                    <span class="material-symbols-outlined text-sm text-subtle-light dark:text-subtle-dark">phone</span>
+                                    <span>${driver.phone}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-content-light dark:text-content-dark">
+                                    <span class="material-symbols-outlined text-sm text-subtle-light dark:text-subtle-dark">location_on</span>
+                                    <span>${driver.area}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-content-light dark:text-content-dark">
+                                    <span class="material-symbols-outlined text-sm text-subtle-light dark:text-subtle-dark">local_shipping</span>
+                                    <span>${driver.totalDeliveries} deliveries</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button onclick="viewDriverDetails(${driver.id})" class="flex-1 px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm">
+                                    <span class="material-symbols-outlined text-sm mr-1">visibility</span>
+                                    View Details
+                                </button>
+                                <button onclick="editDriver(${driver.id})" class="px-3 py-2 border border-border-light dark:border-border-dark rounded-lg text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                    <span class="material-symbols-outlined text-sm">edit</span>
+                                </button>
+                            </div>
+                        `;
+                grid.appendChild(driverCard);
+            });
+        }
+
+        function showAddDriverModal() {
+            document.getElementById('add-driver-modal').classList.remove('hidden');
+        }
+
+        function addNewDriver(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const newDriver = {
+                id: Date.now(),
+                name: formData.get('driverName'),
+                phone: formData.get('phoneNumber'),
+                vehicleNumber: formData.get('vehicleNumber').toUpperCase(),
+                area: formData.get('area'),
+                licenseNumber: formData.get('licenseNumber'),
+                address: formData.get('address'),
+                status: formData.get('status'),
+                joinDate: new Date().toISOString().split('T')[0],
+                totalDeliveries: 0
+            };
+
+            driversData.push(newDriver);
+            loadDrivers();
+            updateStats();
+            closeModal('add-driver-modal');
+            event.target.reset();
+
+            showSuccessMessage(`Driver ${newDriver.name} added successfully`);
+        }
+
+        function viewDriverDetails(driverId) {
+            const driver = driversData.find(d => d.id === driverId);
+            if (!driver) return;
+
+            const statusColor = getStatusColor(driver.status);
+            const statusText = getStatusText(driver.status);
+
+            const content = document.getElementById('driver-details-content');
+            content.innerHTML = `
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4 pb-4 border-b border-border-light dark:border-border-dark">
+                                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-primary text-2xl">person</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-semibold text-content-light dark:text-content-dark">${driver.name}</h4>
+                                    <span class="px-3 py-1 text-white text-sm font-medium rounded-full ${statusColor}">${statusText}</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-subtle-light dark:text-subtle-dark mb-1">Phone Number</label>
+                                    <p class="text-content-light dark:text-content-dark">${driver.phone}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-subtle-light dark:text-subtle-dark mb-1">Vehicle Number</label>
+                                    <p class="text-content-light dark:text-content-dark">${driver.vehicleNumber}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-subtle-light dark:text-subtle-dark mb-1">Area/Route</label>
+                                    <p class="text-content-light dark:text-content-dark">${driver.area}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-subtle-light dark:text-subtle-dark mb-1">License Number</label>
+                                    <p class="text-content-light dark:text-content-dark">${driver.licenseNumber}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-subtle-light dark:text-subtle-dark mb-1">Address</label>
+                                    <p class="text-content-light dark:text-content-dark">${driver.address}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-subtle-light dark:text-subtle-dark mb-1">Join Date</label>
+                                    <p class="text-content-light dark:text-content-dark">${new Date(driver.joinDate).toLocaleDateString()}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-subtle-light dark:text-subtle-dark mb-1">Total Deliveries</label>
+                                    <p class="text-content-light dark:text-content-dark">${driver.totalDeliveries}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-3 pt-4">
+                                <button onclick="editDriver(${driver.id}); closeModal('driver-details-modal')" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                                    <span class="material-symbols-outlined text-sm mr-1">edit</span>
+                                    Edit Driver
+                                </button>
+                                <button onclick="closeModal('driver-details-modal')" class="px-4 py-2 border border-border-light dark:border-border-dark rounded-lg text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+            document.getElementById('driver-details-modal').classList.remove('hidden');
+        }
+
+        function editDriver(driverId) {
+            const driver = driversData.find(d => d.id === driverId);
+            if (!driver) return;
+
+            const form = document.getElementById('edit-driver-form');
+            form.innerHTML = `
+                        <input type="hidden" name="driverId" value="${driver.id}">
+                        <div>
+                            <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Driver Name</label>
+                            <input type="text" name="driverName" value="${driver.name}" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Phone Number</label>
+                            <input type="tel" name="phoneNumber" value="${driver.phone}" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Vehicle Number</label>
+                            <input type="text" name="vehicleNumber" value="${driver.vehicleNumber}" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Area/Route</label>
+                            <input type="text" name="area" value="${driver.area}" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">License Number</label>
+                            <input type="text" name="licenseNumber" value="${driver.licenseNumber}" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Address</label>
+                            <textarea name="address" rows="2" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">${driver.address}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Status</label>
+                            <select name="status" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                                <option value="available" ${driver.status === 'available' ? 'selected' : ''}>Available</option>
+                                <option value="busy" ${driver.status === 'busy' ? 'selected' : ''}>Busy</option>
+                                <option value="off-duty" ${driver.status === 'off-duty' ? 'selected' : ''}>Off Duty</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-3 pt-4">
+                            <button type="button" onclick="closeModal('edit-driver-modal')" class="flex-1 px-4 py-2 border border-border-light dark:border-border-dark rounded-lg text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800">
+                                Cancel
+                            </button>
+                            <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+                                Update Driver
+                            </button>
+                        </div>
+                    `;
+
+            document.getElementById('edit-driver-modal').classList.remove('hidden');
+        }
+
+        function updateDriver(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const driverId = parseInt(formData.get('driverId'));
+
+            const driverIndex = driversData.findIndex(d => d.id === driverId);
+            if (driverIndex === -1) return;
+
+            driversData[driverIndex] = {
+                ...driversData[driverIndex],
+                name: formData.get('driverName'),
+                phone: formData.get('phoneNumber'),
+                vehicleNumber: formData.get('vehicleNumber').toUpperCase(),
+                area: formData.get('area'),
+                licenseNumber: formData.get('licenseNumber'),
+                address: formData.get('address'),
+                status: formData.get('status')
+            };
+
+            loadDrivers();
+            updateStats();
+            closeModal('edit-driver-modal');
+
+            showSuccessMessage(`Driver ${driversData[driverIndex].name} updated successfully`);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showSuccessMessage(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            successDiv.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            <span>${message}</span>
+                        </div>
+                    `;
+            document.body.appendChild(successDiv);
+
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const toggle = document.getElementById('theme-toggle');
+            toggle.textContent = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+
+        function goBack() {
+            window.location.href = 'delivery_charges.html';
+        }
+    </script>
+</body>
+</html>

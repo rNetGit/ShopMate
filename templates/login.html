@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Store Management{% endblock %}
+
+{% block body_class %}gradient-bg min-h-screen font-sans{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Hide number input spinners */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    /* PIN input styling */
+    .pin-input {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        border: 2px solid #e2e8f0;
+        background: #ffffff;
+    }
+
+        .pin-input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            transform: scale(1.05);
+        }
+
+    .dark .pin-input {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f1f5f9;
+    }
+
+        .dark .pin-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+        .pin-input {
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            border-radius: 12px;
+        }
+    }
+
+    /* Gradient background */
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .dark .gradient-bg {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    }
+
+    /* Glass effect */
+    .glass {
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .dark .glass {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes bounceIn {
+        0% {
+            transform: scale(0.3);
+            opacity: 0;
+        }
+
+        50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .animate-slide-up {
+        animation: slideUp 0.4s ease-out;
+    }
+
+    .animate-bounce-in {
+        animation: bounceIn 0.6s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col relative overflow-hidden">
+    <!-- Animated background elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-primary-light/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="relative z-10 p-6 sm:p-8">
+        <div class="flex items-center justify-center">
+            <div class="flex items-center gap-3 animate-fade-in">
+                <div class="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
+                    <span class="material-symbols-rounded text-white text-xl">store</span>
+                </div>
+                <h1 class="text-2xl font-bold text-white">Store Management</h1>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center p-4 relative z-10">
+        <div class="w-full max-w-md animate-slide-up">
+            <!-- Login Card -->
+            <div class="glass rounded-3xl p-8 shadow-2xl">
+                <!-- Icon -->
+                <div class="text-center mb-8">
+                    <div class="mx-auto w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-6 animate-bounce-in">
+                        <span class="material-symbols-rounded text-primary text-4xl">lock_person</span>
+                    </div>
+                    <h2 class="text-3xl font-bold mb-3 text-gray-900 dark:text-white">Welcome Back</h2>
+                    <p class="text-gray-600 dark:text-gray-400 text-lg">Enter your 6-digit PIN to continue</p>
+                </div>
+
+                <!-- PIN Form -->
+                <form method="POST" action="{{ url_for('authenticate') }}" class="mb-8">
+                    <div class="flex justify-center gap-3 mb-6" id="pin-inputs">
+                        <input type="number" class="pin-input" maxlength="1" name="pin_0" oninput="handlePinInput(this, 0)" inputmode="numeric">
+                        <input type="number" class="pin-input" maxlength="1" name="pin_1" oninput="handlePinInput(this, 1)" inputmode="numeric">
+                        <input type="number" class="pin-input" maxlength="1" name="pin_2" oninput="handlePinInput(this, 2)" inputmode="numeric">
+                        <input type="number" class="pin-input" maxlength="1" name="pin_3" oninput="handlePinInput(this, 3)" inputmode="numeric">
+                        <input type="number" class="pin-input" maxlength="1" name="pin_4" oninput="handlePinInput(this, 4)" inputmode="numeric">
+                        <input type="number" class="pin-input" maxlength="1" name="pin_5" oninput="handlePinInput(this, 5)" inputmode="numeric">
+                    </div>
+
+                    <input type="hidden" name="pin" id="hidden-pin">
+
+                    <button type="submit" id="login-btn"
+                            class="w-full h-14 rounded-2xl bg-primary hover:bg-primary-dark disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white font-semibold text-lg transition-all duration-200 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none"
+                            disabled>
+                        <span id="login-text">Enter PIN</span>
+                    </button>
+                </form>
+
+                <!-- Demo Info -->
+                <div class="text-center space-y-3">
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-200 dark:border-blue-800">
+                        <p class="text-blue-800 dark:text-blue-200 font-medium text-sm mb-2">Demo Credentials</p>
+                        <p class="text-blue-600 dark:text-blue-300 font-mono text-lg">123456</p>
+                    </div>
+                    <button type="button" class="text-primary hover:text-primary-dark font-medium transition-colors"
+                            onclick="fillDemoPin()">
+                        <span class="material-symbols-rounded text-sm mr-1">touch_app</span>
+                        Use Demo PIN
+                    </button>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="mt-6 text-center">
+                <p class="text-white/80 text-sm">
+                    Secure access to your store management system
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 p-6 text-center">
+        <p class="text-white/60 text-sm">&copy; 2024 Store Management System. All rights reserved.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    let currentPin = ['', '', '', '', '', ''];
+    const DEMO_PIN = '123456';
+
+    function handlePinInput(input, index) {
+        const value = input.value;
+
+        // Only allow single digits
+        if (value.length > 1) {
+            input.value = value.slice(-1);
+        }
+
+        currentPin[index] = input.value;
+
+        // Auto-move to next input
+        if (value && index < 5) {
+            const nextInput = document.querySelectorAll('.pin-input')[index + 1];
+            nextInput.focus();
+        }
+
+        updateLoginButton();
+        updateHiddenPin();
+    }
+
+    function updateHiddenPin() {
+        document.getElementById('hidden-pin').value = currentPin.join('');
+    }
+
+    function updateLoginButton() {
+        const loginBtn = document.getElementById('login-btn');
+        const loginText = document.getElementById('login-text');
+        const isComplete = currentPin.every(digit => digit !== '');
+
+        loginBtn.disabled = !isComplete;
+        loginText.textContent = isComplete ? 'Login' : 'Enter PIN';
+    }
+
+    function fillDemoPin() {
+        const inputs = document.querySelectorAll('.pin-input');
+        DEMO_PIN.split('').forEach((digit, index) => {
+            inputs[index].value = digit;
+            currentPin[index] = digit;
+            // Add a small animation
+            inputs[index].style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                inputs[index].style.transform = 'scale(1)';
+            }, 150);
+        });
+        updateLoginButton();
+        updateHiddenPin();
+    }
+
+    // Enhanced keyboard support
+    document.addEventListener('keydown', function (e) {
+        const inputs = document.querySelectorAll('.pin-input');
+        const currentInput = document.activeElement;
+        const currentIndex = Array.from(inputs).indexOf(currentInput);
+
+        if (e.key === 'Backspace' && currentIndex > 0 && !currentInput.value) {
+            inputs[currentIndex - 1].focus();
+            inputs[currentIndex - 1].select();
+        }
+
+        // Allow arrow key navigation
+        if (e.key === 'ArrowLeft' && currentIndex > 0) {
+            inputs[currentIndex - 1].focus();
+            inputs[currentIndex - 1].select();
+        }
+        if (e.key === 'ArrowRight' && currentIndex < 5) {
+            inputs[currentIndex + 1].focus();
+            inputs[currentIndex + 1].select();
+        }
+    });
+
+    // Initialize
+    window.addEventListener('load', () => {
+        document.querySelector('.pin-input').focus();
+    });
+
+    // Handle touch/click for better mobile experience
+    document.querySelectorAll('.pin-input').forEach((input, index) => {
+        input.addEventListener('focus', function () {
+            this.select();
+        });
+
+        input.addEventListener('click', function () {
+            this.select();
+        });
+    });
+</script>
+{% endblock %}

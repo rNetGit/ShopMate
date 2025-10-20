@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}Orders - Store Management{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Burger menu animations */
+    .burger-line {
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+    .burger-active .burger-line:nth-child(1) {
+        transform: rotate(45deg) translate(6px, 6px);
+    }
+
+    .burger-active .burger-line:nth-child(2) {
+        opacity: 0;
+    }
+
+    .burger-active .burger-line:nth-child(3) {
+        transform: rotate(-45deg) translate(6px, -6px);
+    }
+
+    /* Mobile menu overlay */
+    .menu-overlay {
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    body {
+        min-height: max(884px, 100dvh);
+    }
+
+    .order-item {
+        transition: all 0.2s ease;
+    }
+
+        .order-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(17, 115, 212, 0.1);
+        }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex h-screen flex-col overflow-hidden">
+    <!-- Enhanced Mobile-First Header -->
+    <header class="flex-shrink-0 bg-white/95 dark:bg-surface-dark/95 backdrop-blur-sm border-b border-border dark:border-border-dark sticky top-0 z-50">
+        <div class="flex h-16 items-center justify-between px-4 sm:px-6">
+            <!-- Left: Burger Menu -->
+            <button id="menu-toggle"
+                    class="flex flex-col w-8 h-8 justify-center items-center space-y-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-1 transition-colors"
+                    onclick="toggleMenu()">
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+            </button>
+
+            <!-- Center: Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-lg">receipt_long</span>
+                </div>
+                <h1 class="text-lg font-bold hidden sm:block">Orders</h1>
+            </div>
+
+            <!-- Right: Actions -->
+            <div class="flex items-center gap-2">
+                <!-- Add Order -->
+                <button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                        onclick="window.location.href='{{ url_for('create_order') }}'" title="Create New Order">
+                    <span class="material-symbols-rounded text-gray-600 dark:text-gray-300">add</span>
+                </button>
+
+                <!-- Profile -->
+                <div class="w-8 h-8 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white text-sm">person</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Burger Menu Sidebar -->
+    <div id="menu-overlay" class="fixed inset-0 bg-black/50 menu-overlay z-40 hidden" onclick="closeMenu()"></div>
+    <div id="menu-sidebar" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white dark:bg-surface-dark border-l border-border dark:border-border-dark z-50 transform translate-x-full transition-transform duration-300">
+        <!-- Menu Header -->
+        <div class="p-6 border-b border-border dark:border-border-dark">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">Menu</h2>
+                <button onclick="closeMenu()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-surface dark:bg-background-dark rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
+                    <span class="material-symbols-rounded text-white">person</span>
+                </div>
+                <div>
+                    <p class="font-semibold">Admin User</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">admin@store.com</p>
+                </div>
+            </div>
+        </div>
+        <!-- Menu Items -->
+        <nav class="p-6 space-y-2">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-4 p-4 rounded-xl bg-primary/10 text-primary font-medium">
+                <span class="material-symbols-rounded">dashboard</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('orders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt_long</span>
+                <span>Orders</span>
+                <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ data.active_orders }}</span>
+            </a>
+            <a href="{{ url_for('create_order') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">add_circle</span>
+                <span>Create Order</span>
+            </a>
+            <a href="{{ url_for('customers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">group</span>
+                <span>Customers</span>
+            </a>
+            <a href="{{ url_for('items') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">inventory</span>
+                <span>Item Master</span>
+            </a>
+            <!-- ADD THESE TWO MISSING MENU ITEMS -->
+            <a href="{{ url_for('drivers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">drive_eta</span>
+                <span>Drivers</span>
+            </a>
+            <a href="{{ url_for('expenses') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">receipt</span>
+                <span>Expenses</span>
+            </a>
+            <!-- END OF ADDED ITEMS -->
+            <a href="{{ url_for('delivery_charges') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">local_shipping</span>
+                <span>Delivery Charges</span>
+            </a>
+            <a href="{{ url_for('balance_due') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">account_balance_wallet</span>
+                <span>Balance Due</span>
+            </a>
+            <a href="{{ url_for('reminders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">schedule</span>
+                <span>Reminders</span>
+            </a>
+            <div class="border-t border-border dark:border-border-dark my-4"></div>
+
+            <a href="{{ url_for('settings') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">settings</span>
+                <span>Settings</span>
+            </a>
+            <a href="{{ url_for('help_support') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <span class="material-symbols-rounded">help</span>
+                <span>Help & Support</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+                <span class="material-symbols-rounded">logout</span>
+                <span>Logout</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-4">
+        <!-- Filter Tabs -->
+        <div class="flex gap-2 mb-6 overflow-x-auto">
+            <button onclick="filterOrders('all')" class="order-filter active px-4 py-2 rounded-full text-sm font-medium bg-primary text-white whitespace-nowrap">
+                All Orders
+            </button>
+            <button onclick="filterOrders('pending')" class="order-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10 whitespace-nowrap">
+                Pending
+            </button>
+            <button onclick="filterOrders('processing')" class="order-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10 whitespace-nowrap">
+                Processing
+            </button>
+            <button onclick="filterOrders('completed')" class="order-filter px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-primary/10 whitespace-nowrap">
+                Completed
+            </button>
+        </div>
+
+        <!-- Orders List -->
+        <div class="space-y-4">
+            {% if orders %}
+            {% for order in orders %}
+            <div class="order-item bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4" data-status="{{ order.status.lower() }}">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        {% set status_class = {
+                        'Pending': 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+                        'Processing': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+                        'Shipped': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                        'Completed': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                        } %}
+                        <span class="px-2 py-1 {{ status_class.get(order.status, 'bg-gray-100 text-gray-800') }} text-xs font-medium rounded-full">{{ order.status }}</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">{{ order.id }}</span>
+                    </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">{{ order.date }}</span>
+                </div>
+                <div class="mb-3">
+                    <p class="font-medium">{{ order.customer }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Delivery</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Total: ${{ "%.2f"|format(order.total) }}</p>
+                    </div>
+                    <button onclick="viewOrderDetails('{{ order.id }}')" class="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors">
+                        View Details
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Sample Orders when no data from Flask -->
+            <div class="order-item bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4" data-status="pending">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-medium rounded-full">Pending</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Order #12345</span>
+                    </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">2 hours ago</span>
+                </div>
+                <div class="mb-3">
+                    <p class="font-medium">John Doe</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">123 Main St • Delivery</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">3 items • $285.50</p>
+                    </div>
+                    <button onclick="viewOrderDetails('12345')" class="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors">
+                        View Details
+                    </button>
+                </div>
+            </div>
+
+            <div class="order-item bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4" data-status="processing">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-medium rounded-full">Processing</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Order #67890</span>
+                    </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">4 hours ago</span>
+                </div>
+                <div class="mb-3">
+                    <p class="font-medium">Jane Smith</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">456 Oak Ave • Pickup</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">2 items • $142.25</p>
+                    </div>
+                    <button onclick="viewOrderDetails('67890')" class="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors">
+                        View Details
+                    </button>
+                </div>
+            </div>
+
+            <div class="order-item bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4" data-status="completed">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs font-medium rounded-full">Completed</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Order #54321</span>
+                    </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">1 day ago</span>
+                </div>
+                <div class="mb-3">
+                    <p class="font-medium">Bob Johnson</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">789 Pine Ln • Delivery</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">5 items • $425.00</p>
+                    </div>
+                    <button onclick="viewOrderDetails('54321')" class="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors">
+                        View Details
+                    </button>
+                </div>
+            </div>
+
+            <div class="order-item bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4" data-status="pending">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 text-xs font-medium rounded-full">Pending</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Order #98765</span>
+                    </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">3 hours ago</span>
+                </div>
+                <div class="mb-3">
+                    <p class="font-medium">Emily Davis</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">321 Elm St • Delivery</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">1 item • $75.00</p>
+                    </div>
+                    <button onclick="viewOrderDetails('98765')" class="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors">
+                        View Details
+                    </button>
+                </div>
+            </div>
+
+            <div class="order-item bg-white dark:bg-surface-dark border border-border dark:border-border-dark rounded-lg p-4" data-status="processing">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs font-medium rounded-full">Processing</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Order #11111</span>
+                    </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">6 hours ago</span>
+                </div>
+                <div class="mb-3">
+                    <p class="font-medium">Michael Wilson</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">654 Maple Dr • Pickup</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">4 items • $520.75</p>
+                    </div>
+                    <button onclick="viewOrderDetails('11111')" class="px-3 py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary/90 transition-colors">
+                        View Details
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Empty State -->
+        {% if orders and orders|length == 0 %}
+        <div class="text-center py-12">
+            <span class="material-symbols-rounded text-6xl text-gray-500 dark:text-gray-400 mb-4 block">receipt_long</span>
+            <p class="text-lg font-medium">No orders found</p>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">Get started by creating your first order</p>
+            <button onclick="window.location.href='{{ url_for('create_order') }}'" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                Create Order
+            </button>
+        </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Menu Functions
+    function toggleMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.toggle('burger-active');
+        menuOverlay.classList.toggle('hidden');
+
+        if (menuSidebar.style.transform === 'translateX(0px)') {
+            menuSidebar.style.transform = 'translateX(100%)';
+        } else {
+            menuSidebar.style.transform = 'translateX(0px)';
+        }
+    }
+
+    function closeMenu() {
+        const menuToggle = document.getElementById('menu-toggle');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuSidebar = document.getElementById('menu-sidebar');
+
+        menuToggle.classList.remove('burger-active');
+        menuOverlay.classList.add('hidden');
+        menuSidebar.style.transform = 'translateX(100%)';
+    }
+
+    function goBack() {
+        window.history.back();
+    }
+
+    function filterOrders(status) {
+        // Update active filter
+        document.querySelectorAll('.order-filter').forEach(btn => {
+            btn.classList.remove('active', 'bg-primary', 'text-white');
+            btn.classList.add('bg-gray-100', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-gray-100');
+        });
+
+        event.target.classList.add('active', 'bg-primary', 'text-white');
+        event.target.classList.remove('bg-gray-100', 'dark:bg-gray-800', 'text-gray-900', 'dark:text-gray-100');
+
+        // Filter orders
+        const orders = document.querySelectorAll('.order-item');
+        orders.forEach(order => {
+            if (status === 'all' || order.dataset.status === status) {
+                order.style.display = 'block';
+            } else {
+                order.style.display = 'none';
+            }
+        });
+    }
+
+    function viewOrderDetails(orderId) {
+        // In a real app, you would navigate to order details page
+        // window.location.href = `{{ url_for('order_details') }}?id=${orderId}`;
+        alert(`Opening order details for ${orderId}`);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function () {
+        // Close menu on window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                closeMenu();
+            }
+        });
+    });
+</script>
+{% endblock %}

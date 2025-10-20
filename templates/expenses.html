@@ -1,0 +1,865 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Expense Tracker - Store Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+    tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "content-light": "#1f2937",
+                        "content-dark": "#e5e7eb",
+                        "subtle-light": "#6b7280",
+                        "subtle-dark": "#9ca3af",
+                        "border-light": "#e5e7eb",
+                        "border-dark": "#374151"
+                    },
+                    fontFamily: {
+                        display: ["Manrope", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        };</script>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+
+        /* Burger menu animations */
+        .burger-line {
+            transition: all 0.3s ease;
+            transform-origin: center;
+        }
+
+        .burger-active .burger-line:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+
+        .burger-active .burger-line:nth-child(2) {
+            opacity: 0;
+        }
+
+        .burger-active .burger-line:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
+        /* Mobile menu overlay */
+        .menu-overlay {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .stats-card {
+            transition: all 0.3s ease;
+        }
+
+            .stats-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+
+        .expense-card {
+            transition: all 0.2s ease;
+        }
+
+            .expense-card:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+
+        .transaction-row {
+            transition: background-color 0.2s ease;
+        }
+
+            .transaction-row:hover {
+                background-color: rgba(17, 115, 212, 0.05);
+            }
+
+        .due-indicator {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-content-light dark:text-content-dark">
+    <div class="flex h-screen flex-col">
+        <!-- Enhanced Mobile-First Header -->
+        <header class="flex-shrink-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-border-light dark:border-border-dark sticky top-0 z-50">
+            <div class="flex h-16 items-center justify-between px-4 sm:px-6">
+                <!-- Left: Burger Menu -->
+                <button id="menu-toggle"
+                        class="flex flex-col w-8 h-8 justify-center items-center space-y-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-1 transition-colors"
+                        onclick="toggleMenu()">
+                    <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                    <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                    <div class="burger-line w-6 h-0.5 bg-gray-600 dark:bg-gray-300 rounded-full"></div>
+                </button>
+
+                <!-- Center: Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-orange-500 rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-sm">receipt</span>
+                    </div>
+                    <h1 class="text-lg font-bold hidden sm:block">Expense Tracker</h1>
+                </div>
+
+                <!-- Right: Actions -->
+                <div class="flex items-center gap-2">
+                    <!-- Add Expense -->
+                    <button onclick="showAddExpenseModal()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Add New Expense">
+                        <span class="material-symbols-outlined text-gray-600 dark:text-gray-300">add</span>
+                    </button>
+
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                        <span class="material-symbols-outlined text-gray-600 dark:text-gray-300" id="theme-toggle">dark_mode</span>
+                    </button>
+
+                    <!-- Profile -->
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary to-primary rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-sm">person</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Burger Menu Sidebar -->
+        <div id="menu-overlay" class="fixed inset-0 bg-black/50 menu-overlay z-40 hidden" onclick="closeMenu()"></div>
+        <div id="menu-sidebar" class="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white dark:bg-background-dark border-l border-border-light dark:border-border-dark z-50 transform translate-x-full transition-transform duration-300">
+            <!-- Menu Header -->
+            <div class="p-6 border-b border-border-light dark:border-border-dark">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Menu</h2>
+                    <button onclick="closeMenu()" class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white">person</span>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Admin User</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">admin@store.com</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Items -->
+            <nav class="p-6 space-y-2">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center gap-4 p-4 rounded-xl bg-primary/10 text-primary font-medium">
+                    <span class="material-symbols-rounded">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('orders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">receipt_long</span>
+                    <span>Orders</span>
+                    <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ data.active_orders }}</span>
+                </a>
+                <a href="{{ url_for('create_order') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">add_circle</span>
+                    <span>Create Order</span>
+                </a>
+                <a href="{{ url_for('customers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">group</span>
+                    <span>Customers</span>
+                </a>
+                <a href="{{ url_for('items') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">inventory</span>
+                    <span>Item Master</span>
+                </a>
+                <!-- ADD THESE TWO MISSING MENU ITEMS -->
+                <a href="{{ url_for('drivers') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">drive_eta</span>
+                    <span>Drivers</span>
+                </a>
+                <a href="{{ url_for('expenses') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">receipt</span>
+                    <span>Expenses</span>
+                </a>
+                <!-- END OF ADDED ITEMS -->
+                <a href="{{ url_for('delivery_charges') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">local_shipping</span>
+                    <span>Delivery Charges</span>
+                </a>
+                <a href="{{ url_for('balance_due') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">account_balance_wallet</span>
+                    <span>Balance Due</span>
+                </a>
+                <a href="{{ url_for('reminders') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">schedule</span>
+                    <span>Reminders</span>
+                </a>
+                <div class="border-t border-border dark:border-border-dark my-4"></div>
+
+                <a href="{{ url_for('settings') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">settings</span>
+                    <span>Settings</span>
+                </a>
+                <a href="{{ url_for('help_support') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <span class="material-symbols-rounded">help</span>
+                    <span>Help & Support</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="flex items-center gap-4 p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">
+                    <span class="material-symbols-rounded">logout</span>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </div>
+
+        <main class="flex-1 overflow-y-auto">
+            <div class="p-4 space-y-6">
+                <!-- Summary Stats -->
+                <section>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-red-100 dark:bg-red-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-red-600 dark:text-red-400">pending</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="total-unpaid">₹0</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">Total Unpaid</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-green-600 dark:text-green-400">payments</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="total-paid">₹0</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">Total Paid</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">receipt_long</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="total-expenses">0</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">Total Expenses</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="stats-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
+                                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">calendar_today</span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold text-content-light dark:text-content-dark" id="this-month">₹0</p>
+                                    <p class="text-sm text-subtle-light dark:text-subtle-dark">This Month</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick Actions -->
+                <section>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-content-light dark:text-content-dark">Quick Actions</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="showAddExpenseModal()" class="expense-card flex items-center gap-4 bg-orange-500 text-white p-4 rounded-xl hover:bg-orange-600 transition-all">
+                            <span class="material-symbols-outlined text-2xl">add_circle</span>
+                            <div class="text-left">
+                                <p class="font-semibold text-lg">Add New Expense</p>
+                                <p class="text-sm text-white/80">Record new expense</p>
+                            </div>
+                        </button>
+                        <button onclick="showPayExpenseModal()" class="expense-card flex items-center gap-4 bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                            <span class="material-symbols-outlined text-2xl text-green-600">payments</span>
+                            <div class="text-left">
+                                <p class="font-semibold text-lg text-content-light dark:text-content-dark">Pay Expense</p>
+                                <p class="text-sm text-subtle-light dark:text-subtle-dark">Mark expense as paid</p>
+                            </div>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Unpaid Items Summary -->
+                <section>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-content-light dark:text-content-dark">Unpaid Items Summary</h2>
+                        <div class="flex gap-2">
+                            <select class="px-3 py-1.5 text-sm bg-white dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg" onchange="filterExpenses(this.value)">
+                                <option value="">All Items</option>
+                                <option value="Water Can">Water Can</option>
+                                <option value="Tea">Tea</option>
+                                <option value="Coffee">Coffee</option>
+                                <option value="Meals">Meals</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="unpaid-summary">
+                        <!-- Unpaid summary will be populated here -->
+                    </div>
+                </section>
+
+                <!-- Recent Expenses -->
+                <section>
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-content-light dark:text-content-dark">Recent Expenses</h2>
+                        <button class="text-primary text-sm hover:underline" onclick="viewAllExpenses()">View All</button>
+                    </div>
+                    <div class="bg-white dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50 dark:bg-gray-800">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Date</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Item</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Quantity</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-subtle-light dark:text-subtle-dark uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border-light dark:divide-border-dark" id="expense-history">
+                                    <!-- Expense history will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add New Expense Modal -->
+    <div id="add-expense-modal" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="closeModal('add-expense-modal')">
+        <div class="absolute inset-x-4 top-1/2 transform -translate-y-1/2 max-w-md mx-auto bg-white dark:bg-background-dark rounded-xl shadow-xl" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-content-light dark:text-content-dark">Add New Expense</h3>
+                    <button onclick="closeModal('add-expense-modal')" class="text-subtle-light dark:text-subtle-dark hover:text-content-light dark:hover:text-content-dark">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form onsubmit="addNewExpense(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Date</label>
+                        <input type="date" name="expenseDate" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Item</label>
+                        <select name="item" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                            <option value="">Select item...</option>
+                            <option value="Water Can">Water Can</option>
+                            <option value="Tea">Tea</option>
+                            <option value="Coffee">Coffee</option>
+                            <option value="Meals">Meals</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Quantity</label>
+                        <input type="number" name="quantity" min="1" placeholder="0" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeModal('add-expense-modal')" class="flex-1 px-4 py-2 border border-border-light dark:border-border-dark rounded-lg text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                            Add Expense
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pay Expense Modal -->
+    <div id="pay-expense-modal" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="closeModal('pay-expense-modal')">
+        <div class="absolute inset-x-4 top-1/2 transform -translate-y-1/2 max-w-md mx-auto bg-white dark:bg-background-dark rounded-xl shadow-xl" onclick="event.stopPropagation()">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-content-light dark:text-content-dark">Pay Expense</h3>
+                    <button onclick="closeModal('pay-expense-modal')" class="text-subtle-light dark:text-subtle-dark hover:text-content-light dark:hover:text-content-dark">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form onsubmit="payExpense(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Payment Date</label>
+                        <input type="date" name="paymentDate" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Item</label>
+                        <select name="payItem" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark" id="pay-item-select">
+                            <option value="">Select item to pay...</option>
+                        </select>
+                    </div>
+                    <div id="item-details" class="hidden bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                        <p class="text-sm"><span class="font-medium">Item:</span> <span id="selected-item"></span></p>
+                        <p class="text-sm"><span class="font-medium">Unpaid Quantity:</span> <span id="selected-quantity"></span></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-content-light dark:text-content-dark mb-1">Quantity to Pay</label>
+                        <input type="number" name="payQuantity" min="1" placeholder="0" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-background-dark" oninput="validatePaymentQuantity(this)">
+                        <p class="text-xs text-subtle-light dark:text-subtle-dark mt-1">Enter quantity to mark as paid</p>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeModal('pay-expense-modal')" class="flex-1 px-4 py-2 border border-border-light dark:border-border-dark rounded-lg text-content-light dark:text-content-dark hover:bg-gray-50 dark:hover:bg-gray-800">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                            Mark as Paid
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Storage key for localStorage
+        const STORAGE_KEY = 'expense-tracker-data';
+
+        // Sample data with localStorage support
+        let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+            {
+                id: 1,
+                date: '2024-12-10',
+                item: 'Water Can',
+                quantity: 10,
+                unpaidQuantity: 10,
+                payments: []
+            },
+            {
+                id: 2,
+                date: '2024-12-09',
+                item: 'Tea',
+                quantity: 50,
+                unpaidQuantity: 30,
+                payments: [
+                    { date: '2024-12-10', quantity: 20 }
+                ]
+            },
+            {
+                id: 3,
+                date: '2024-12-09',
+                item: 'Coffee',
+                quantity: 25,
+                unpaidQuantity: 25,
+                payments: []
+            },
+            {
+                id: 4,
+                date: '2024-12-08',
+                item: 'Meals',
+                quantity: 15,
+                unpaidQuantity: 5,
+                payments: [
+                    { date: '2024-12-09', quantity: 10 }
+                ]
+            }
+        ];
+
+        // Menu Functions
+        function toggleMenu() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const menuSidebar = document.getElementById('menu-sidebar');
+
+            menuToggle.classList.toggle('burger-active');
+            menuOverlay.classList.toggle('hidden');
+
+            if (menuSidebar.style.transform === 'translateX(0px)') {
+                menuSidebar.style.transform = 'translateX(100%)';
+            } else {
+                menuSidebar.style.transform = 'translateX(0px)';
+            }
+        }
+
+        function closeMenu() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const menuSidebar = document.getElementById('menu-sidebar');
+
+            menuToggle.classList.remove('burger-active');
+            menuOverlay.classList.add('hidden');
+            menuSidebar.style.transform = 'translateX(100%)';
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function () {
+            loadUnpaidSummary();
+            loadExpenseHistory();
+            updateStats();
+
+            // Set today's date as default in forms
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelectorAll('input[type="date"]').forEach(input => {
+                if (!input.value) input.value = today;
+            });
+
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-toggle').textContent = 'light_mode';
+            }
+
+            // Close menu on window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    closeMenu();
+                }
+            });
+        });
+
+        function loadUnpaidSummary() {
+            const container = document.getElementById('unpaid-summary');
+            container.innerHTML = '';
+
+            // Calculate unpaid quantities by item
+            const unpaidSummary = {};
+            expenses.forEach(expense => {
+                if (expense.unpaidQuantity > 0) {
+                    if (!unpaidSummary[expense.item]) {
+                        unpaidSummary[expense.item] = 0;
+                    }
+                    unpaidSummary[expense.item] += expense.unpaidQuantity;
+                }
+            });
+
+            if (Object.keys(unpaidSummary).length === 0) {
+                container.innerHTML = `
+                        <div class="col-span-full text-center py-8 text-subtle-light dark:text-subtle-dark">
+                            <span class="material-symbols-outlined text-6xl mb-4 block">check_circle</span>
+                            <p>No unpaid expenses</p>
+                            <p class="text-sm">All expenses have been paid</p>
+                        </div>
+                    `;
+                return;
+            }
+
+            // Create cards for each item with unpaid quantities
+            Object.keys(unpaidSummary).forEach(item => {
+                const quantity = unpaidSummary[item];
+                const itemCard = document.createElement('div');
+                itemCard.className = 'expense-card bg-white dark:bg-background-dark border border-border-light dark:border-border-dark rounded-xl p-4 shadow-sm';
+
+                // Different colors for different items
+                const itemColors = {
+                    'Water Can': 'blue',
+                    'Tea': 'green',
+                    'Coffee': 'amber',
+                    'Meals': 'purple'
+                };
+                const color = itemColors[item] || 'gray';
+
+                itemCard.innerHTML = `
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="due-indicator w-3 h-3 bg-red-500 rounded-full"></div>
+                            <div class="w-10 h-10 bg-${color}-100 dark:bg-${color}-900/30 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-${color}-600 dark:text-${color}-400">${getItemIcon(item)}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-content-light dark:text-content-dark">${item}</p>
+                            <p class="text-2xl font-bold text-red-600 dark:text-red-400">${quantity}</p>
+                            <p class="text-sm text-subtle-light dark:text-subtle-dark">Unpaid Quantity</p>
+                        </div>
+                    `;
+                container.appendChild(itemCard);
+            });
+        }
+
+        function getItemIcon(item) {
+            const icons = {
+                'Water Can': 'water_drop',
+                'Tea': 'local_cafe',
+                'Coffee': 'coffee',
+                'Meals': 'restaurant'
+            };
+            return icons[item] || 'receipt';
+        }
+
+        function loadExpenseHistory() {
+            const tbody = document.getElementById('expense-history');
+            tbody.innerHTML = '';
+
+            const recentExpenses = expenses.slice().reverse().slice(0, 10);
+
+            recentExpenses.forEach(expense => {
+                const row = document.createElement('tr');
+                row.className = 'transaction-row';
+                const isPaid = expense.unpaidQuantity === 0;
+
+                row.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-content-light dark:text-content-dark">${new Date(expense.date).toLocaleDateString()}</td>
+                        <td class="px-4 py-3 text-sm text-content-light dark:text-content-dark">${expense.item}</td>
+                        <td class="px-4 py-3 text-sm text-content-light dark:text-content-dark">
+                            <span class="text-subtle-light dark:text-subtle-dark">${expense.quantity - expense.unpaidQuantity}/${expense.quantity}</span>
+                            ${expense.unpaidQuantity > 0 ? `<span class="text-red-600 dark:text-red-400 font-medium"> (${expense.unpaidQuantity} unpaid)</span>` : ''}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <span class="px-2 py-1 text-xs rounded-full ${isPaid ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}">
+                                ${isPaid ? 'Paid' : 'Unpaid'}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            ${!isPaid ? `<button onclick="showPayExpenseModalForItem('${expense.item}')" class="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300">Pay</button>` : '-'}
+                        </td>
+                    `;
+                tbody.appendChild(row);
+            });
+
+            // Update pay item select dropdown
+            updatePayItemSelect();
+        }
+
+        function updateStats() {
+            const totalUnpaid = expenses.reduce((sum, expense) => sum + expense.unpaidQuantity, 0);
+            const totalPaid = expenses.reduce((sum, expense) => sum + (expense.quantity - expense.unpaidQuantity), 0);
+            const totalExpenses = expenses.length;
+
+            // Calculate this month's expenses
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            const thisMonthExpenses = expenses.filter(expense => {
+                const expenseDate = new Date(expense.date);
+                return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+            });
+            const thisMonthTotal = thisMonthExpenses.reduce((sum, expense) => sum + expense.quantity, 0);
+
+            document.getElementById('total-unpaid').textContent = totalUnpaid;
+            document.getElementById('total-paid').textContent = totalPaid;
+            document.getElementById('total-expenses').textContent = totalExpenses;
+            document.getElementById('this-month').textContent = thisMonthTotal;
+        }
+
+        function updatePayItemSelect() {
+            const select = document.getElementById('pay-item-select');
+            select.innerHTML = '<option value="">Select item to pay...</option>';
+
+            // Get items with unpaid quantities
+            const unpaidItems = {};
+            expenses.forEach(expense => {
+                if (expense.unpaidQuantity > 0) {
+                    if (!unpaidItems[expense.item]) {
+                        unpaidItems[expense.item] = 0;
+                    }
+                    unpaidItems[expense.item] += expense.unpaidQuantity;
+                }
+            });
+
+            Object.keys(unpaidItems).forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = `${item} (${unpaidItems[item]} unpaid)`;
+                select.appendChild(option);
+            });
+
+            select.addEventListener('change', function () {
+                const selectedItem = this.value;
+                if (selectedItem) {
+                    const unpaidQuantity = unpaidItems[selectedItem] || 0;
+                    document.getElementById('selected-item').textContent = selectedItem;
+                    document.getElementById('selected-quantity').textContent = unpaidQuantity;
+                    document.getElementById('item-details').classList.remove('hidden');
+                } else {
+                    document.getElementById('item-details').classList.add('hidden');
+                }
+            });
+        }
+
+        function showAddExpenseModal() {
+            document.getElementById('add-expense-modal').classList.remove('hidden');
+        }
+
+        function showPayExpenseModal() {
+            updatePayItemSelect();
+            document.getElementById('pay-expense-modal').classList.remove('hidden');
+        }
+
+        function showPayExpenseModalForItem(item) {
+            showPayExpenseModal();
+            setTimeout(() => {
+                document.getElementById('pay-item-select').value = item;
+                document.getElementById('pay-item-select').dispatchEvent(new Event('change'));
+            }, 100);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function addNewExpense(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const newExpense = {
+                id: Date.now(),
+                date: formData.get('expenseDate'),
+                item: formData.get('item'),
+                quantity: parseInt(formData.get('quantity')),
+                unpaidQuantity: parseInt(formData.get('quantity')),
+                payments: []
+            };
+
+            expenses.push(newExpense);
+            saveData();
+            loadUnpaidSummary();
+            loadExpenseHistory();
+            updateStats();
+            closeModal('add-expense-modal');
+            event.target.reset();
+
+            showSuccessMessage(`New expense added: ${newExpense.quantity} ${newExpense.item}`);
+        }
+
+        function payExpense(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const paymentDate = formData.get('paymentDate');
+            const payItem = formData.get('payItem');
+            const payQuantity = parseInt(formData.get('payQuantity'));
+
+            // Find expenses with unpaid quantities for this item
+            const unpaidExpenses = expenses.filter(expense =>
+                expense.item === payItem && expense.unpaidQuantity > 0
+            ).sort((a, b) => new Date(a.date) - new Date(b.date)); // Oldest first
+
+            if (unpaidExpenses.length === 0) {
+                alert('No unpaid expenses found for this item');
+                return;
+            }
+
+            const totalUnpaid = unpaidExpenses.reduce((sum, expense) => sum + expense.unpaidQuantity, 0);
+            if (payQuantity > totalUnpaid) {
+                alert(`Payment quantity cannot exceed unpaid quantity of ${totalUnpaid}`);
+                return;
+            }
+
+            // Apply payment to oldest expenses first
+            let remainingPayment = payQuantity;
+            unpaidExpenses.forEach(expense => {
+                if (remainingPayment <= 0) return;
+
+                const paymentToThisExpense = Math.min(remainingPayment, expense.unpaidQuantity);
+                expense.unpaidQuantity -= paymentToThisExpense;
+                remainingPayment -= paymentToThisExpense;
+
+                // Record the payment
+                expense.payments.push({
+                    date: paymentDate,
+                    quantity: paymentToThisExpense
+                });
+            });
+
+            saveData();
+            loadUnpaidSummary();
+            loadExpenseHistory();
+            updateStats();
+            closeModal('pay-expense-modal');
+            event.target.reset();
+
+            showSuccessMessage(`Payment recorded: ${payQuantity} ${payItem} marked as paid`);
+        }
+
+        function validatePaymentQuantity(input) {
+            const selectedItem = document.getElementById('pay-item-select').value;
+            if (selectedItem) {
+                const totalUnpaid = expenses
+                    .filter(expense => expense.item === selectedItem && expense.unpaidQuantity > 0)
+                    .reduce((sum, expense) => sum + expense.unpaidQuantity, 0);
+
+                if (parseInt(input.value) > totalUnpaid) {
+                    input.setCustomValidity(`Quantity cannot exceed ${totalUnpaid}`);
+                } else {
+                    input.setCustomValidity('');
+                }
+            }
+        }
+
+        function filterExpenses(itemFilter) {
+            const summaryCards = document.querySelectorAll('#unpaid-summary .expense-card');
+
+            summaryCards.forEach(card => {
+                const itemText = card.querySelector('p.font-semibold').textContent;
+                if (!itemFilter || itemText === itemFilter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function viewAllExpenses() {
+            alert('Opening full expense history...');
+        }
+
+        function showSuccessMessage(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            successDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <span>${message}</span>
+                    </div>
+                `;
+            document.body.appendChild(successDiv);
+
+            setTimeout(() => {
+                successDiv.remove();
+            }, 3000);
+        }
+
+        function refreshData() {
+            loadUnpaidSummary();
+            loadExpenseHistory();
+            updateStats();
+            showSuccessMessage('Data refreshed successfully');
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const toggle = document.getElementById('theme-toggle');
+            toggle.textContent = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+
+        function goBack() {
+            window.location.href = 'more_modules.html';
+        }
+    </script>
+</body>
+</html>

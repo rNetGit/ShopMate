@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>More Modules - Store Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+    tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1173d4",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "content-light": "#1f2937",
+                        "content-dark": "#e5e7eb",
+                        "subtle-light": "#6b7280",
+                        "subtle-dark": "#9ca3af",
+                        "border-light": "#e5e7eb",
+                        "border-dark": "#374151"
+                    },
+                    fontFamily: {
+                        display: ["Manrope", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px",
+                    },
+                },
+            },
+        };</script>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+
+        .quick-access-card {
+            transition: all 0.2s ease;
+        }
+
+            .quick-access-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-content-light dark:text-content-dark">
+    <div class="flex h-screen flex-col">
+        <!-- Header -->
+        <header class="flex-shrink-0 border-b border-border-light dark:border-border-dark bg-white/80 dark:bg-background-dark/80 backdrop-blur-sm">
+            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3">
+                    <button onclick="goBack()" class="rounded-full p-2 text-content-light dark:text-content-dark hover:bg-primary/10 transition-colors">
+                        <span class="material-symbols-outlined">arrow_back</span>
+                    </button>
+                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-sm">apps</span>
+                    </div>
+                </div>
+                <h1 class="text-lg font-bold text-content-light dark:text-content-dark">More Modules</h1>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleDarkMode()" class="rounded-full p-2 text-content-light dark:text-content-dark hover:bg-primary/10 transition-colors">
+                        <span class="material-symbols-outlined" id="theme-toggle">dark_mode</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto">
+            <div class="p-4 space-y-6">
+                <!-- System Modules -->
+                <section>
+                    <h2 class="mb-4 text-xl font-bold text-content-light dark:text-content-dark">System Modules</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-all" href="user_management.html">
+                            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">group</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">User Management</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-all" href="item_master.html">
+                            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">inventory</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Item Master</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-all" href="orders.html">
+                            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">local_shipping</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Order Tracker</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-all" href="Orders.html">
+                            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">receipt_long</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Create Bill</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-all" href="customers.html">
+                            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">person</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Customer Master</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-green-500/5 dark:hover:bg-green-500/10 transition-all" href="delivery_charges.html">
+                            <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-green-600 dark:text-green-400">local_shipping</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Delivery Charges</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-all" href="reports.html">
+                            <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">analytics</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Reports</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-red-500/5 dark:hover:bg-red-500/10 transition-all" href="balance_due.html">
+                            <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-red-600 dark:text-red-400">account_balance_wallet</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Balance Due</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-blue-500/5 dark:hover:bg-blue-500/10 transition-all" href="driver_master.html">
+                            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">drive_eta</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Driver Master</span>
+                        </a>
+
+                        <a class="quick-access-card flex flex-col items-center justify-center space-y-3 rounded-xl bg-white dark:bg-background-dark border border-border-light dark:border-border-dark p-6 text-center hover:bg-orange-500/5 dark:hover:bg-orange-500/10 transition-all" href="expense_tracker.html">
+                            <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                                <span class="material-symbols-outlined text-orange-600 dark:text-orange-400">receipt</span>
+                            </div>
+                            <span class="text-sm font-semibold text-content-light dark:text-content-dark">Expense Tracker</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer Navigation -->
+        <footer class="flex-shrink-0 border-t border-border-light dark:border-border-dark bg-white/80 dark:bg-background-dark/80 backdrop-blur-sm">
+            <nav class="mx-auto flex h-16 max-w-7xl items-center justify-around px-4">
+                <a class="flex flex-col items-center gap-1 text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="dashboard.html">
+                    <span class="material-symbols-outlined">home</span>
+                    <span class="text-xs font-medium">Dashboard</span>
+                </a>
+                <a class="flex flex-col items-center gap-1 text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="Orders.html">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <span class="text-xs font-medium">Orders</span>
+                </a>
+                <a class="flex flex-col items-center gap-1 text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="customers.html">
+                    <span class="material-symbols-outlined">group</span>
+                    <span class="text-xs font-medium">Customers</span>
+                </a>
+                <a class="flex flex-col items-center gap-1 text-subtle-light dark:text-subtle-dark hover:text-primary transition-colors" href="item_master.html">
+                    <span class="material-symbols-outlined">inventory_2</span>
+                    <span class="text-xs font-medium">Items</span>
+                </a>
+                <a class="flex flex-col items-center gap-1 text-primary" href="more_modules.html">
+                    <span class="material-symbols-outlined">apps</span>
+                    <span class="text-xs font-medium">More</span>
+                </a>
+            </nav>
+        </footer>
+    </div>
+
+    <script>
+    // Initialize page
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check for saved dark mode preference
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-toggle').textContent = 'light_mode';
+            }
+        });
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const toggle = document.getElementById('theme-toggle');
+            toggle.textContent = document.documentElement.classList.contains('dark') ? 'light_mode' : 'dark_mode';
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        }
+
+        function goBack() {
+            window.location.href = 'dashboard.html';
+        }</script>
+</body>
+</html>
