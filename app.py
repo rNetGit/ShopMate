@@ -26,7 +26,7 @@ ORDERS = [
 
 ITEMS = [
     {'id': 1, 'name': '43 set', 'category': 'RINGS', 'price': 250.00, 'stock': 15},
-    {'id': 2, 'name': '43 set', 'category': 'RINGS', 'price': 500.00, 'stock': 15},
+    {'id': 2, 'name': '43-ULTA', 'category': 'RINGS', 'price': 500.00, 'stock': 15},
     {'id': 3, 'name': '20MM NAGALS', 'category': 'NAGALS', 'price': 300.00, 'stock': 8},
     {'id': 4, 'name': '25MM NAGALS', 'category': 'NAGALS', 'price': 400.00, 'stock': 25},
 ]
