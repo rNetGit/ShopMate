@@ -5,6 +5,9 @@ from datetime import datetime
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-in-production'  # Change this in production!
 
+# Use environment variable for secret key in production
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+
 # Demo PIN for authentication
 DEMO_PIN = '123456'
 
